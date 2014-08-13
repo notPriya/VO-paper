@@ -1,0 +1,431 @@
+\documentclass[letterpaper, 10 pt, conference]{ieeeconf}
+
+\IEEEoverridecommandlockouts % Needed for the \thanks command
+
+% Needed to meet printer requirements.
+\overrideIEEEmargins
+
+%\usepackage{cite}
+\usepackage{amsmath}
+\usepackage{subcaption}
+\usepackage{color} % make comments appear in color.
+\usepackage{colortbl}
+
+% Moar spacing for editing.
+\linespread{1}
+
+% Color for the table.
+\definecolor{Gray}{gray}{0.85}
+
+\usepackage[pdftex]{graphicx}
+% declare the path(s) where your graphic files are
+\graphicspath{{../MATLAB/LKT/results/} {./figures/}}
+% and their extensions so you won't have to specify these with
+% every instance of \includegraphics
+\DeclareGraphicsExtensions{.pdf,.jpeg,.png}
+
+% Try to make the 'c#' symbol...
+\newcommand{\Csharp}{%
+  {\settoheight{\dimen0}{C}C\kern-.05em \resizebox{!}{\dimen0}{\raisebox{\depth}{\#}}}}
+  
+% Argmin and argmax operators.
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+% Comments.
+%\newcommand{\comment}[1]{{\color{red}[#1]}}
+\newcommand{\comment}[1]{} %NOP
+
+% Formatted subreference.
+\newcommand{\Subref}[1]{(\subref{#1})}
+
+% *** SUBFIGURE PACKAGES ***
+%\usepackage[tight,footnotesize]{subfigure}
+% subfigure.sty was written by Steven Douglas Cochran. This package makes it
+% easy to put subfigures in your figures. e.g., "Figure 1a and 1b". For IEEE
+% work, it is a good idea to load it with the tight package option to reduce
+% the amount of white space around the subfigures.
+
+%\usepackage[caption=false]{caption}
+%\usepackage[font=footnotesize]{subfig}
+% subfig.sty, also written by Steven Douglas Cochran, is the modern
+% replacement for subfigure.sty. However, subfig.sty requires and
+% automatically loads Axel Sommerfeldt's caption.sty which will override
+% IEEEtran.cls handling of captions and this will result in nonIEEE style
+% figure/table captions. To prevent this problem, be sure and preload
+% caption.sty with its "caption=false" package option. This is will preserve
+% IEEEtran.cls handing of captions. Version 1.3 (2005/06/28) and later 
+% (recommended due to many improvements over 1.2) of subfig.sty supports
+% the caption=false option directly:
+%\usepackage[caption=false,font=footnotesize]{subfig}
+
+% *** PDF, URL AND HYPERLINK PACKAGES ***
+%
+\usepackage{url}
+% url.sty was written by Donald Arseneau. It provides better support for
+% handling and breaking URLs. url.sty is already installed on most LaTeX
+% systems.
+
+
+
+% paper title
+% can use linebreaks \\ within to get better formatting as desired
+\title{\LARGE \bf Visual Odometry In Inspection Environments}
+
+% author names and affiliations
+% use a multiple column layout for up to three different
+% affiliations
+\author{Priyanka Deo and Howie Choset%
+\thanks{Robotics Institute,
+Carnegie Mellon University,
+Pittsburgh, PA 15213, USA
+{\tt\small $\lbrace$ pdeo, choset $\rbrace$@andrew.cmu.edu}}%
+}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{empty}
+\pagestyle{empty}
+
+
+\begin{abstract}
+
+Robots are ideal for inspecting confined spaces that are not easily accessible to humans. Good estimates of the robot's position are essential for defects and other anomalies to be localized effectively. The aim of this work is to improve localization for inspection robots through visual odometry. Inspection environments are challenging for vision algorithms because they are unlit and contain few large features. We improve upon the Lucas Kanade tracker by also tracking salient objects. Lucas Kanade gives an initial motion estimate by matching the current frame to a previously localized frame. Salient objects are detected using a Hough Transform and tracked with a Kalman Filter to improve motion estimates. The approach is tested on a Youtube dataset of pipe inspection videos and experimentally verified on on a snake robot traversing a pipe and a small treaded robot traversing a mock airplane wing.
+
+\end{abstract}
+
+
+\section{Introduction}
+
+Robots are increasingly used to inspect small closed spaces which are not accessible to a human. While robots can navigate tight spaces to take videos of defects or anomalies, the utility of such inspections is limited by poor localization.
+
+Inspection environments are typified by slightly textured components broken up by few large edge gradients, Fig. \ref{example_image}. Since the environment is often a closed space, large changes in illumination occur when a robot with an integrated light source traverses an otherwise unlit environment. Correlating image frames becomes difficult when there are few features and large changes in illumination vary the appearances of those features.
+
+Tethered robots moving only in one direction can be localized using an estimate of the amount of tether released. The distance estimate may be poor if the robot drives backwards to get a better view of a problem, and is ineffective for robots inspecting a 2D or 3D space.
+
+Another solution to localization is dead reckoning, whereby encoder information is used to estimate the robot's velocity and, via integration, the robot's position. For many robots, dead reckoning produces poor estimates because it does not account for slip.
+
+\comment{Might want to motivate what feature based and direct approaches are. Cite people? Also you probably want to be citing someone for saying that feature association fails. Talk to Dey about whom to cit otherwise include a figure.}
+
+Visual odometry is an alternative to localization that can account for slip. Feature-based approaches work well in visually rich environments containing many unique trackable features. Such approaches fail in inspection environments where point features appear identical making stable feature association difficult. For such environments, direct approaches, like Lucas Kanade, that estimate motion directly from pixel intensities perform better by using the entire image instead of tracking sparse features. Direct approaches assume differences in pixel intensities are caused by motion and have difficulty with large changes in illumination.
+
+
+\begin{figure}[tb]
+	\centering
+	\begin{subfigure}{.45\columnwidth}
+		  \centering
+		  \includegraphics[width=\columnwidth]{pipe_image.png}
+		  \subcaption{}
+		  \label{example_image:snake}
+	\end{subfigure}
+	\begin{subfigure}{.45\columnwidth}
+		  \centering
+		  \includegraphics[width=\columnwidth]{wingbay_image.png}
+		  \subcaption{}
+		  \label{example_image:crawler}
+	\end{subfigure}
+	\caption{Example images from video taken by the snake robot in a pipe \Subref{example_image:snake} and crawler robot in a mock airplane wing \Subref{example_image:crawler}.}
+    \label{example_image}
+\end{figure}
+
+We present a framework for enhancing Lucas Kanade tracking by incorporating a salient object tracker that tracks available features. We show improvement over Lucas Kanade for a dataset of pipe inspection videos on Youtube as well as for a snake robot, Fig. \ref{robots:snake}, and a small treaded robot, Fig. \ref{robots:crawler}. We demonstrate the generality and robustness of the algorithm on multiple platforms with different methods of motion and in different environments.
+
+\begin{figure}[tb]
+	\centering
+	\begin{subfigure}{.45\columnwidth}
+		  \centering
+		  \includegraphics[width=\columnwidth]{snake_image.jpg}
+		  \subcaption{}
+		  \label{robots:snake}
+	\end{subfigure}
+	\begin{subfigure}{.45\columnwidth}
+		  \centering
+		  \includegraphics[width=\columnwidth]{crawler_image.jpg}
+		  \subcaption{}
+		  \label{robots:crawler}
+	\end{subfigure}
+	\caption{Photographs of the Carnegie Mellon University Biorobotics Lab's Unified Modular Snake Robot \Subref{robots:snake} and Crawler Robot \Subref{robots:crawler}.}
+    \label{robots}
+\end{figure}
+
+\section{Related Works}
+
+Several other approaches \cite{Scaramuzza14, Kerl13, Comport10, Tykkala11} use direct methods over feature based methods for localization and mapping. These approaches register images by minimizing the photometric error over the full 6 degree of freedom motion of the robot and use depth information to to reproject 3D points and refine motion estimates. However, these approaches do not consider the visual scarcity of inspection environments.
+
+
+%Lucas Kanade Algorithms
+%\begin{itemize}
+%\item \cite{Scaramuzza14}
+%Minimzies photometric error between pixels. Uses map to improve odometry estimates. Improves map with new image frame. Feature matching and correlation via non-feature based methods.
+%Depth information
+%\item \cite{Kerl13}
+%minimzies photometric error. 
+%visually varied environments
+%RGBD images
+%Depth information
+%\item \cite{Comport10}
+%minimizes photometric error over stereo image pairs.
+%Depth information
+%\item \cite{Tykkala11}
+%direct methods for ICP
+%\end{itemize}
+
+While typical odometry algorithms focus on a full range of robot motion, visual odometry algorithms proposed for sewer pipes \cite{Saenz08, Browning11} are usually limited to motion estimation in one dimension along the length pipe. Other work on sewer pipes \cite{Pan94, Pan95} use Hough Transforms to detect and track joints, but do not infer motion.
+
+\section{Approach}
+
+Figure \ref{approach} shows an overview of the integration of a salient object tracker with the Lucas Kanade pipeline. Lucas Kanade produces an estimate of motion by comparing a new image frame with a previously localized frame. The salient object tracker uses a Hough Transform to detect an object in the new image frame that is tracked via a Kalman Filter, producing another estimate of motion. The robot's motion is estimated as the weighted average of the estimations produced independently by Lucas Kanade and the object tracker. The final motion estimate is integrated to determine the state of the robot relative to its initial position.
+
+\begin{figure}[tb]
+	\centering
+	\includegraphics[height=200px]{approach_overview.png}
+	\caption{Visual odometry pipeline with feature tracking.}
+    \label{approach}
+\end{figure}
+
+\subsection{Lucas Kanade Tracking}
+
+Lucas Kanade finds a transform $W$ with parameters $p$ that best matches a template $T$ to an image frame $I$. The template frame is a previously localized image frame that is temporally near the current frame and used to compute relative motion between the images. The same template frame is used to localize several consecutive images, reducing drift. Lucas Kanade determines the transform to the template by minimizing the least squared error over all pixels $\psi$ between the pixel intensities of the template and transformed image with respect to the parameters of the transform,
+
+\begin{equation} \label{eq:lkt_min}
+    \argmin_p \sum_{\psi} [I(W(\psi, p)) - T(\psi)]^2.
+\end{equation}
+
+Since both the snake robot and the crawler robot have limited motions in the inspection environments, the image transform is constrained to rotations, translations, and scale. Planar motions of the robot ($\Delta x$, $\Delta y$, and $\Delta \theta$) correspond directly to planar motions of the image, while motion into the image plane ($\Delta z$) manifests as a change in image scale, proportional to the focal length $f$ of the camera. To simplify further equations, the robot's motion into the image plane can be written using the change in image scale $\alpha$,
+
+\begin{equation} \label{eq:z_motion_conversion}
+	\alpha = 1 - \frac{\Delta z}{f}.
+\end{equation}
+
+In general, the transform described in terms of the robot's motion will have the form,
+
+\comment{Is this correct? Should the $\alpha$ be inside the sinusoids?}
+
+\begin{equation*}
+W(\Delta x, \Delta y, \Delta \theta, \alpha) = \begin{bmatrix} \frac{\cos(\Delta \theta)}{\alpha} & -\frac{\sin(\Delta \theta)}{\alpha} & \frac{\Delta x}{\alpha} \\ \frac{\sin(\Delta \theta)}{\alpha} & \frac{\cos(\Delta \theta)}{\alpha} & \frac{\Delta y}{\alpha} \\ 0 & 0 & 1 \end{bmatrix}.
+\end{equation*}
+
+Since the image frames being compared are temporally close, they must also be spatially close. Linearizing around small rotations gives a simpler transform,
+
+\begin{equation*}
+W(\Delta x, \Delta y, \Delta \theta, \alpha) = \begin{bmatrix} \frac{1}{\alpha} & -\frac{\Delta \theta}{\alpha} & \frac{\Delta x}{\alpha} \\ \frac{\Delta \theta}{\alpha} & \frac{1}{\alpha} & \frac{\Delta y}{\alpha} \\ 0 & 0 & 1 \end{bmatrix}.
+\end{equation*}
+
+For convenience during the Lucas Kanade minimization, the transform can be rewritten in terms of a set of independent parameters,
+
+\begin{eqnarray}
+\begin{split} \label{eq:warp_param_conversion}
+p_1 &=& \frac{\Delta x}{\alpha}\\
+p_2 &=& \frac{\Delta y}{\alpha}\\
+p_3 &=& \frac{\Delta \theta}{\alpha}\\
+p_4 &=& \frac{1}{\alpha} - 1\\
+\end{split}
+\\ \label{eq:param_warp}
+W(p) = \begin{bmatrix} 1+p_4 & -p_3 & p_1 \\ p_3 & 1+p_4 & p_2 \\ 0 & 0 & 1 \end{bmatrix}.
+\end{eqnarray}
+
+We solve the resulting minimization problem \eqref{eq:lkt_min} with the parameterized transform \eqref{eq:param_warp} using the method of Lucas and Kanade \cite{Lucas81, lucaskanade}, giving the relative motion between the template and the current image frame. The robot's motion can be recovered from the transform parameters using Equation \eqref{eq:z_motion_conversion} and Equation \eqref{eq:warp_param_conversion}, and is thresholded to determine when the field of view has changed. When the field of view changes, the template is updated to the last localized image frame, ensuring that subsequent image comparisons are temporally and spatially close.
+
+
+\subsection{Salient Object Tracking}
+
+In an inspection environment, large features, such as pipe joints or airplane ribs, can be tracked to improve motion estimates. Salient features in an image can be detected using a Hough Transform, which returns a set of parameters to describe the state of any detected objects. For example, a straight line is parameterized by an angle $\theta$ and a length $\rho$, and a circle is parameterized by a center $(a, b)$ and a radius $r$. The Matlab implementation of Hough Transforms also returns a score that measures the relative strengths for the detected objects.
+
+Using the Hough Transform, a large number of candidate objects in the image can be found. In order to track a particular object, candidate objects are identified using a feature descriptor $\textbf{F}$ that measures the quality of the detection. The feature descriptor is a vector containing the Hough Transform score and the difference between the Hough parameters of the candidate object and the previous object. A scoring metric can be computed using a set of tuned feature weights $w$ for a given type of tracker. The scoring metric ranks candidate objects by their similarity to the previous object and is used to choose the next state of the object,
+
+\begin{equation}
+	\argmax_{\textrm{object}} w^T \textbf{F}(\textrm{object}).
+\end{equation}
+
+
+Using only the scoring metric to determine the next state of the object is noisy and prone to outliers. Often the object will display erratic movement that is not consistent with motion a physical system could produce. Tracking is improved by using a Kalman Filter with a first-order model on the Hough Transform parameters $P$ of the object and process noise $\nu \in N(0, \mu_1)$ and measurement noise $\omega \in N(0, \mu_2)$,
+
+\begin{eqnarray*}
+s = \begin{bmatrix} P \\ \dot{P} \end{bmatrix} \\
+s_{k+1} = \begin{bmatrix} I & dt*I \\ 0 & I \end{bmatrix} s_{k} + \nu \\
+y_k = \begin{bmatrix} I & 0 \end{bmatrix} s_k + \omega.
+\end{eqnarray*}
+
+A salient object is tracked until it moves out of the image frame and out of the field of view, at which point a new object is initialized. For the snake robot and pipe inspection videos, the search is biased towards small circles near the center of the previously tracked object. For the crawler robot, the search is biased towards lines with the same orientation as the previously tracked object.
+
+\subsection{Extracting Scale}
+
+For the pipe inspection videos and the snake robot, the scale between image pixels and real world measurements is computed through a known prior on the pipe's radius. When salient object tracker detects a pipe joint, the radius of the joint in the image can be measured. Scale can be estimated as the ratio between the known radius of the pipe and the measured radius of the tracked joint. Estimates of the robot's distance to the joint are calculated using the scale and the camera's focal length. For situations where the camera cannot be calibrated, as with the Youtube videos, the camera's focal length is estimated to be the same as a Microsoft Kinect.
+
+For the airplane wing inspection videos, the camera faces the ribbed ceiling of an airplane wing at a constant distance. Since the width of the beams on the ceiling is known, scale can be estimated with noisy measurements of the beams in the image using an approach similar to \cite{Lucey14}. Scale can be repeatedly refined with new measurements of the beam width until convergence, when a fixed value is used.
+
+Beams are located in an image using a Hough Transform, as described previously, to detect lines in the image. We assume that the two most parallel lines in an image form the boundary of a beam. Instances when the assumption is incorrect are treated as part of noise in the data and are accounted for when finding the best scale factor.
+
+We measure the pixel distance between the two parallel lines to get a noisy estimate of the width of the beam. All measurements of beam width are concatenated into a vector, and the scale is computed by minimizing the error between the prior and the scaled pixel beam widths,
+
+\begin{equation}
+	\argmin_{\textrm{scale}} || \textbf{\textrm{prior}} - \textrm{scale} * \textbf{\textrm{width}} ||.
+\end{equation}
+
+
+\section{Experimental Platforms}
+
+We performed experiments on a datset of pipe inspection videos from Youtube as well as on the snake robot and the crawler robot.
+
+The Youtube dataset consists of four videos \cite{pipevideo2, pipevideo4, pipevideo5, pipevideo6} posted by pipe inspection companies of first-person footage from inspection robots equipped with lighting and a camera as they navigate through a pipe. These videos are annotated with ground truth distance that the robot has traveled as measured via the robot's tether. This data contains videos taken in pipes of varying size, material, and fog and water conditions.
+
+The snake robot \cite{Wright2012} consists of a series of identical 1-degree-of-freedom (DOF) joints oriented at $90^{\circ}$ to one another and locomotes using cyclic patterns of joint motion. Previous work with the snake robot has used a motion model \cite{Enner2012} to estimate the motion of the robot in straight pipes \cite{Enner2013}. This approach uses the joint angles and kinematics of the snake robot to estimate how much the snake has moved. This is analogous to a integrating the encoders on a wheeled robotic system, and does not account for slip.
+
+The crawler robot is a small treaded robot with a camera facing up and a camera facing towards the rear, built to investigate airplane wings. Localization is provided by tracking a fixed AR tag with the rear-facing camera. Such localization fails if the AR tag is out of the field of view of the camera, or when the robot is far from the tag and pixel errors in tag localization correspond to large errors in distance.
+
+\section{Experiment Results}
+
+We test the accuracy of our implementation on a Youtube dataset of four different pipe inspection videos that were split into a total of five 1 minute segments for ease of processing. Sections where the robot turned its camera away from downstream of the pipe were cropped out because the joint was out of the field of view and could not be tracked. If we had control over the robot, the detector could be paused until the robot returns to looking downstream. Every frame in this dataset is correlated with an estimate of forward distance traveled measured using the robot's tether. To avoid incorrect accuracy estimates, the dataset is limited to sections of the video where the robot is moving forward or stopped and the tether estimate reflects the robots motion.
+
+\begin{table*}[tb] 
+	\centering
+	\footnotesize
+	\setlength{\tabcolsep}{.5em}
+	\caption{Error Statistics on Youtube Dataset}
+	\label{table:youtube_results}
+	\begin{tabular}{c|c|c|c|c|}
+		\hline
+		& Algorithm & Max Error & Mean Error & Standard Deviation of Error\\
+		\hline
+		Pipe Video 1 & LKT & 16.5 & 7.702 & 4.692 \\
+		\rowcolor{Gray}
+		Pipe Video 1 & LKT + Joint Tracking & 3.098 & 1.678 & 0.8218\\
+		Pipe Video 2 & LKT & 12.56 & 5.009 & 4.032\\
+		\rowcolor{Gray}
+		Pipe Video 2 & LKT + Joint Tracking & 2.685 & 1.38 & 0.7038\\
+		Pipe Video 3 & LKT & 0.8046 & 0.6841 & 0.1872 \\
+		\rowcolor{Gray}
+		Pipe Video 3 & LKT + Joint Tracking & 3.19 & 2.128 & 0.4301\\
+		Pipe Video 4 & LKT & 16.69 & 7.747 & 5.138\\
+		\rowcolor{Gray}
+		Pipe Video 4 & LKT + Joint Tracking & 21.09 & 10.33 & 6.834\\
+		Pipe Video 5 & LKT & 16.79 & 8.86 & 5.228 \\
+		\rowcolor{Gray}
+		Pipe Video 5 & LKT + Joint Tracking & 7.024 & 3.441 & 2.073\\
+		\hline
+		\hline
+		Average  & LKT & 10.96 & 5.1311 & 3.3384 \\
+		\rowcolor{Gray}
+		Average & LKT + Joint Tracking & 7.0081 & 3.5471 & 2.0579\\
+		\hline
+	\end{tabular}
+\end{table*}
+
+
+Overall, the salient object tracker improves the Lucas Kanade position estimates by reducing the average error in Table \ref{table:youtube_results}. On average, maximum error is reduced by $36 \%$ and mean error is reduced by $31 \%$. For videos 3 and 4, the object tracker fails, resulting in a higher maximum error and higher mean error on these videos. The salient object tracker fails repeatedly when there is not enough light to enhance textures along the pipe wall, making it difficult to detect joints.
+
+We implemented a filter that thresholds the average pixel intensity over the entire video to determine apriori whether a particular pipe video has enough lighting for the salient object tracker to perform well. Videos 1 and 2 had the highest average pixel intensity values and also corresponded to videos where the salient object tracker improves upon the Lucas Kanade algorithm the most, Fig. \ref{youtube:error_over_time}. These two videos improve the mean error by $76 \%$ on average.
+
+\comment{Since we can control the lighting of a robot, we need only make sure that this condition is met before conducting experiments.} 
+
+\begin{figure}[tb]
+	\centering
+	\includegraphics[width=\columnwidth]{youtube_err_v_time.png}
+	\caption{Error between the algorithms and the groundtruth for the Youtube videos.}
+    \label{youtube:error_over_time}
+\end{figure}
+
+
+We carried out experiments with the snake robot and the crawler robot to compare the performance of Lucas Kanade with and without salient object tracking. We collected data of two sets of motions with each of these robots.
+
+For the snake robot, the first motion (dashed line in Fig. \ref{snakes:trial8}) consisted of unimpeded motion within the pipe, while the second motion (dashed line in Fig. \ref{snakes:trial9}) simulated infinite slip when the robot was held in place. The groundtruth was estimated by measuring the amount of tether released at the end of each motion and when the robot was held in place.
+
+The motion model for the snake robot slightly underestimates the actual robot motion when unimpeded (Fig. \ref{snakes:trial8}) and fails to adjust for holding the robot in place (Fig. \ref{snakes:trial9}), since it has no notion of friction or slip. In contrast, Lucas Kanade and the salient object tracker are both able to detect the stop in forward motion when the features in the image maintain a fixed size. Compared to the actual measurement of  $0.1714$m for the stopping distance, Lucas Kanade estimates the stopping distance as $0.1831$m, while incorporating the salient object tracker slightly improves the estimate to $0.1823$m. 
+
+Overall, Lucas Kanade has a final error estimate of $18.6 \%$ of the distance traveled for the first motion and $45.7 \%$ for the second motion, while Lucas Kanade with the object tracking has a final error estimate of $2 \%$ of total distance traveled for the first motion and $61.6 \%$ for the second motion. Incorporating the salient object tracker improves estimation for the first motion, but causes more drift for the second motion.
+
+For the crawler robot, the first motion (dashed line in Fig. \ref{crawler:pattern1}) tested the ability to estimate forward distance traveled and amount of rotation, while the second motion  (dashed line in Fig. \ref{crawler:pattern2}) consisted of a more complicated maneuver. The robot's motion was estimated based on the trajectory followed by the operator driving the robot.
+
+With the crawler robot, Fig. \ref{crawler:pattern1} shows that both Lucas Kanade and Lucas Kanade with object tracking have a good estimate of the robot's orientation and forward distance traveled. The average position error was $0.0042$m for Lucas Kanade and $0.0019$m for Lucas Kanade with object tracking. The average orientation error was $4.2^{\circ}$ and $3.7^{\circ}$ respectively. 
+
+Since motion parallel to the beam produces little visual variation and is difficult to detect, we observed degraded odometry estimates, Fig. \ref{crawler:pattern2}, for the second pattern containing lateral motion. The average position error increased to $0.0310$m for Lucas Kanade and to $0.0189$m for Lucas Kanade with object tracking. The average orientation error increased to $5.4^{\circ}$ for Lucas Kanade and to $4.6^{\circ}$ for Lucas Kanade with object tracking.
+
+Table \ref{table:crawler_results} shows that though the pose estimate is poor, adding the salient object tracker to Lucas Kanade improves motion estimates by reducing overall position and orientation error.
+
+\begin{figure*}[tb]
+	\centering
+	\begin{subfigure}{\columnwidth}
+		  \centering
+		  \includegraphics[width=\columnwidth]{trial8_results.png}
+		  \subcaption{Results for allowing the robot to drive continuously within the pipe.}
+		  \label{snakes:trial8}
+	\end{subfigure}
+	\begin{subfigure}{\columnwidth}
+		  \centering
+		  \includegraphics[width=\columnwidth]{trial9_results.png}
+		  \subcaption{Results for holding the robot in place while driving within the pipe.}
+		  \label{snakes:trial9}
+	\end{subfigure}
+	\caption{Results with using the snake robot.}
+    \label{snakes}
+\end{figure*}
+
+
+\begin{figure*}[tb]
+	\centering
+	\begin{subfigure}{\columnwidth}
+		  \centering
+		  \includegraphics[width=\columnwidth]{crawler1_results.png}
+		  \subcaption{Error between algorithms and a simple groundtruth motion.}
+		  \label{crawler:pattern1}
+	\end{subfigure}
+	\begin{subfigure}{\columnwidth}
+		  \centering
+		  \includegraphics[width=\columnwidth]{crawler2_results.png}
+		  \subcaption{Error between algorithms and a more complex groundtruth motion.}
+		  \label{crawler:pattern2}
+	\end{subfigure}
+	\caption{Results with using the crawler robot.}
+    \label{crawler}
+\end{figure*}
+
+\begin{table*}[tb]
+	\centering
+	\footnotesize
+	\setlength{\tabcolsep}{.6em}
+	\caption{Error Statistics on the Crawler Experiment}
+	\label{table:crawler_results}
+	\begin{tabular}{c|c|c|c|c|}
+	\hline
+	& Motion 1 & Motion 1 & Motion 2 & Motion 2\\
+	\hline
+	Algorithm & LKT & LKT + Object Tracking & LKT & LKT + Object Tracking\\ 
+	\hline
+	Sum of Squared Position Error & 2.1370 & 0.9534 & 36.453 & 22.263\\
+	\hline
+	Standard Deviation of Squared Position Error & 0.0049 & 0.0031 & 0.034 & 0.025\\
+	\hline
+	Mean Orientation Error & 4.1598 & 3.6811 & 5.3688 & 4.604\\
+	\hline
+	Standard Deviation of Orientation Error & 5.4483 & 5.1506 & 3.9943 & 3.6791\\
+	\hline
+	\end{tabular}
+\end{table*}
+
+\section{Conclusion}
+
+We have proposed a vision system for robots in inspection environments that improves the Lucas Kanade algorithm by adding a Hough Transform based salient object tracker. In general, Lucas Kanade provides a starting estimate of the robot's motion by matching the textural components of the image. However, errors in motion estimation accumulate and cause drift. The salient object tracker is more precise for certain components of the robot's motion and is more insensitive to drift, since the tracker senses the same object repeatedly. We have demonstrated incorporating the salient object tracker on multiple inspection robots and shown that it improves Lucas Kanade for all platforms.
+
+
+% \comment{Add a Future Work section}
+% \begin{enumerate}
+% \item Test on a larger Youtube dataset.
+% \end{enumerate}
+
+% This command serves to balance the column lengths
+% on the last page of the document manually. It shortens
+% the textheight of the last page by a suitable amount.
+% This command does not take effect until the next page
+% so it should come on the page before the last. Make
+% sure that you do not shorten the textheight too much.
+\addtolength{\textheight}{-1cm}
+
+\section*{Acknowledgment}
+
+The authors would like to thank the current and past members of the Biorobotics Lab for instrumental contributions to the research.
+
+\bibliographystyle{IEEEtran}
+\bibliography{IEEEabrv,visual_odometry_paper}
+
+\end{document}
