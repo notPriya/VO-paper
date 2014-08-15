@@ -91,7 +91,7 @@ Pittsburgh, PA 15213, USA
 
 \begin{abstract}
 
-The aim of our work is to provide a method for localizing robots in confined inspection environments that succeeds for multiple platforms. Localization of an inspection robot is essential for defects and other anomalies to be located effectively. We present a framework for enhancing Lucas Kanade tracking by incorporating a salient object tracker that tracks available features. Lucas Kanade gives an initial motion estimate by matching the current frame to a previously localized frame. Salient objects are detected using a Hough Transform and tracked with a Kalman Filter to improve motion estimates. The approach is tested on a Youtube dataset of pipe inspection videos and experimentally verified on on a snake robot traversing a pipe and a small treaded robot traversing a mock airplane wing.
+The aim of our work is to develop a method for localizing robots in confined inspection environments that succeeds for multiple platforms. Localization of an inspection robot is essential for defects and other anomalies to be located effectively. We present a framework for enhancing Lucas Kanade tracking by incorporating a salient object tracker that tracks available features. Lucas Kanade gives an initial motion estimate by matching the current frame to a previously localized frame. Salient objects are detected using a Hough Transform and tracked with a Kalman Filter to improve motion estimates. The approach is tested on a Youtube dataset of pipe inspection videos and experimentally verified on on a snake robot traversing a pipe and a small treaded robot traversing a mock airplane wing.
 
 \end{abstract}
 
@@ -102,18 +102,15 @@ The aim of our work is to provide a method for localizing robots in confined ins
 
 Localization is important for inspection robots to determine the position of defects found and to navigate to inspect particular locations. In pipe inspections, localization of defects helps determine where a pipe needs to be replaced. In airplane wing inspections, the robot must navigate the wing to check if components are correctly assembled.
 
-We propose one framework that can estimate the motion of multiple types of robots. The method is general and robust enough to work on different platforms in different situations.
+While inspection robots can be customized for the inspection task, the robots all face a common challenge of localization in environments with few repeating features. We are interested in the development of an approach that generalizes to a variety of platforms with minimial requirements on the platform and on the environment.
 
 The inspection environments considered are slightly textured components broken up by few large edge gradients, Fig. \ref{example_image}. Since the environment is often a closed space, large changes in illumination occur when a robot with an integrated light source traverses an otherwise unlit environment. Correlating image frames becomes difficult when there are few features and large changes in illumination vary the appearances of those features.
 
-Another approach for localization of tethered robots is to measure the payout length of the tether. Using the tether for positioning is feasible if the structure of the environment is linear and known beforehand.
-
-For localization in more varied environments, dead reckoning uses encoder information to estimate the robot's velocity and, via integration, the robot's position. For many robots, dead reckoning produces poor estimates because it does not account for slip.
+Common approaches for localization are measuring robot's tether and dead reckoning. If available, measuring the payout length of the tether yields accurate estimate of position. However, it requires the structure of the environment to be linear and known beforehand. For localization in more varied environments, dead reckoning uses encoder information to estimate the robot's velocity and, via integration, the robot's position. For many robots, dead reckoning produces poor estimates because it does not account for slip.
 
 %Might want to motivate what feature based and direct approaches are. Cite people? Also you probably want to be citing someone for saying that feature association fails. Talk to Dey about whom to cit otherwise include a figure.
 
 Visual odometry is an alternative to localization that can account for slip. Feature-based approaches work well in visually rich environments containing many unique trackable features. Such approaches fail in inspection environments where point features appear identical making stable feature association difficult. For such environments, direct approaches, like Lucas Kanade, that estimate motion directly from pixel intensities perform better by using the entire image instead of tracking sparse features. Direct approaches assume differences in pixel intensities are caused by motion and have difficulty with large changes in illumination.
-
 
 \begin{figure}[tb]
 	\centering
@@ -133,10 +130,9 @@ Visual odometry is an alternative to localization that can account for slip. Fea
     \label{example_image}
 \end{figure}
 
+We present a framework for enhancing Lucas Kanade tracking by incorporating a salient object tracker, and show improvement over Lucas Kanade for multiple experimental platforms. We succeed by combining a direct approach to leverage motion information across the entire image with a feature based approach to maintain illumination and drift invariance. We demonstrate the generality and robustness of the approach for multiple robots with different methods of locomotion and in different environments.
+
 Our approach is tested on a dataset of first-person footage from pipe inspection robots posted by sewer inspection companies on Youtube. Experiments are also performed using a snake robot (Fig. \ref{robots:snake}) crawling through a pipe, and a crawler robot (Fig. \ref{robots:crawler}) driving in a mock airplane wing. The test platforms are described further in Section \ref{section:Experimental Platforms}.
-
-We present a framework for enhancing Lucas Kanade tracking by incorporating a salient object tracker, and show improvement over Lucas Kanade for multiple experimental platforms. We demonstrate the generality and robustness of the approach for multiple robots with different methods of locomotion and in different environments.
-
 
 \begin{figure}[tb]
 	\centering
@@ -327,17 +323,53 @@ We implemented a filter that thresholds the average pixel intensity over the ent
 
 We carried out experiments with the snake robot and the crawler robot to compare the performance of Lucas Kanade with and without salient object tracking. We collected data of two sets of motions with each of these robots.
 
-For the snake robot, the first motion (dashed line in Fig. \ref{snakes:trial8}) consisted of unimpeded motion within the pipe, while the second motion (dashed line in Fig. \ref{snakes:trial9}) simulated infinite slip when the robot was held in place. The groundtruth was estimated by measuring the amount of tether released at the end of each motion and when the robot was held in place.
+For the snake robot, the first motion (dashed line in Fig. \ref{snakes:trial8_path}) consisted of unimpeded motion within the pipe, while the second motion (dashed line in Fig. \ref{snakes:trial9_path}) simulated infinite slip when the robot was held in place. The groundtruth was estimated by measuring the amount of tether released at the end of each motion and when the robot was held in place.
 
-The motion model for the snake robot slightly underestimates the actual robot motion when unimpeded (Fig. \ref{snakes:trial8}) and fails to adjust for holding the robot in place (Fig. \ref{snakes:trial9}), since it has no notion of friction or slip. In contrast, Lucas Kanade and the salient object tracker are both able to detect the stop in forward motion when the features in the image maintain a fixed size. Compared to the actual measurement of  $0.1714$m for the stopping distance, Lucas Kanade estimates the stopping distance as $0.1831$m, while incorporating the salient object tracker slightly improves the estimate to $0.1823$m. 
+The motion model for the snake robot slightly underestimates the actual robot motion when unimpeded (Fig. \ref{snakes:trial8_path}) and fails to adjust for holding the robot in place (Fig. \ref{snakes:trial9_path}), since it has no notion of friction or slip. In contrast, Lucas Kanade and the salient object tracker are both able to detect the stop in forward motion when the features in the image maintain a fixed size. Compared to the actual measurement of  $0.1714$m for the stopping distance, Lucas Kanade estimates the stopping distance as $0.1831$m, while incorporating the salient object tracker slightly improves the estimate to $0.1823$m. 
 
 Overall, Lucas Kanade has a final error estimate of $18.6 \%$ of the distance traveled for the first motion and $45.7 \%$ for the second motion, while Lucas Kanade with the object tracking has a final error estimate of $2 \%$ of total distance traveled for the first motion and $61.6 \%$ for the second motion. Incorporating the salient object tracker improves estimation for the first motion, but causes more drift for the second motion.
 
-For the crawler robot, the first motion (dashed line in Fig. \ref{crawler:pattern1}) tested the ability to estimate forward distance traveled and amount of rotation, while the second motion  (dashed line in Fig. \ref{crawler:pattern2}) consisted of a more complicated maneuver. The robot's motion was estimated based on the trajectory followed by the operator driving the robot.
+\begin{figure*}[tb]
+	\centering
+	\begin{subfigure}{\columnwidth}
+		  \centering
+		  \includegraphics[width=\columnwidth]{trial8_path.png}
+		  \subcaption{Results for allowing the robot to drive continuously within the pipe.}
+		  \label{snakes:trial8_path}
+	\end{subfigure}
+	\begin{subfigure}{\columnwidth}
+		  \centering
+		  \includegraphics[width=\columnwidth]{trial9_path.png}
+		  \subcaption{Results for holding the robot in place while driving within the pipe.}
+		  \label{snakes:trial9_path}
+	\end{subfigure}
+	\caption{Odometry paths generated for the snake robot.}
+    \label{snakes_path}
+\end{figure*}
 
-With the crawler robot, Fig. \ref{crawler:pattern1} shows that both Lucas Kanade and Lucas Kanade with object tracking have a good estimate of the robot's orientation and forward distance traveled. The average position error was $0.0042$m for Lucas Kanade and $0.0019$m for Lucas Kanade with object tracking. The average orientation error was $4.2^{\circ}$ and $3.7^{\circ}$ respectively. 
+\begin{figure*}[tb]
+	\centering
+	\begin{subfigure}{\columnwidth}
+		  \centering
+		  \includegraphics[width=\columnwidth]{trial8_results.png}
+		  \subcaption{Error between algorithms for driving the robot continuously within the pipe.}
+		  \label{snakes:trial8_error}
+	\end{subfigure}
+	\begin{subfigure}{\columnwidth}
+		  \centering
+		  \includegraphics[width=\columnwidth]{trial9_results.png}
+		  \subcaption{Error between algorithms for holding the robot in place while driving within the pipe.}
+		  \label{snakes:trial9_error}
+	\end{subfigure}
+	\caption{Comparison of errors between algorithms for the snake robot.}
+    \label{snakes_error}
+\end{figure*}
 
-Since motion parallel to the beam produces little visual variation and is difficult to detect, we observed degraded odometry estimates, Fig. \ref{crawler:pattern2}, for the second pattern containing lateral motion. The average position error increased to $0.0310$m for Lucas Kanade and to $0.0189$m for Lucas Kanade with object tracking. The average orientation error increased to $5.4^{\circ}$ for Lucas Kanade and to $4.6^{\circ}$ for Lucas Kanade with object tracking.
+For the crawler robot, the first motion (dashed line in Fig. \ref{crawler:pattern1_path}) tested the ability to estimate forward distance traveled and amount of rotation, while the second motion  (dashed line in Fig. \ref{crawler:pattern2_path}) consisted of a more complicated maneuver. The robot's motion was estimated based on the trajectory followed by the operator driving the robot.
+
+With the crawler robot, Fig. \ref{crawler:pattern1_error} shows that both Lucas Kanade and Lucas Kanade with object tracking have a good estimate of the robot's orientation and forward distance traveled. The average position error was $0.0042$m for Lucas Kanade and $0.0019$m for Lucas Kanade with object tracking. The average orientation error was $4.2^{\circ}$ and $3.7^{\circ}$ respectively. 
+
+Since motion parallel to the beam produces little visual variation and is difficult to detect, we observed degraded odometry estimates, Fig. \ref{crawler:pattern2_error}, for the second pattern containing lateral motion. The average position error increased to $0.0310$m for Lucas Kanade and to $0.0189$m for Lucas Kanade with object tracking. The average orientation error increased to $5.4^{\circ}$ for Lucas Kanade and to $4.6^{\circ}$ for Lucas Kanade with object tracking.
 
 Table \ref{table:crawler_results} shows that though the pose estimate is poor, adding the salient object tracker to Lucas Kanade improves motion estimates by reducing overall position and orientation error.
 
@@ -345,20 +377,19 @@ Table \ref{table:crawler_results} shows that though the pose estimate is poor, a
 	\centering
 	\begin{subfigure}{\columnwidth}
 		  \centering
-		  \includegraphics[width=\columnwidth]{trial8_results.png}
-		  \subcaption{Results for allowing the robot to drive continuously within the pipe.}
-		  \label{snakes:trial8}
+		  \includegraphics[width=\columnwidth]{crawler1_path.png}
+		  \subcaption{Results for a simple groundtruth motion.}
+		  \label{crawler:pattern1_path}
 	\end{subfigure}
 	\begin{subfigure}{\columnwidth}
 		  \centering
-		  \includegraphics[width=\columnwidth]{trial9_results.png}
-		  \subcaption{Results for holding the robot in place while driving within the pipe.}
-		  \label{snakes:trial9}
+		  \includegraphics[width=\columnwidth]{crawler2_path.png}
+		  \subcaption{Results for a more complex groundtruth motion.}
+		  \label{crawler:pattern2_path}
 	\end{subfigure}
-	\caption{Results with using the snake robot.}
-    \label{snakes}
+	\caption{Odometry paths generated for the crawler robot.}
+    \label{crawler_path}
 \end{figure*}
-
 
 \begin{figure*}[tb]
 	\centering
@@ -366,16 +397,16 @@ Table \ref{table:crawler_results} shows that though the pose estimate is poor, a
 		  \centering
 		  \includegraphics[width=\columnwidth]{crawler1_results.png}
 		  \subcaption{Error between algorithms and a simple groundtruth motion.}
-		  \label{crawler:pattern1}
+		  \label{crawler:pattern1_error}
 	\end{subfigure}
 	\begin{subfigure}{\columnwidth}
 		  \centering
 		  \includegraphics[width=\columnwidth]{crawler2_results.png}
 		  \subcaption{Error between algorithms and a more complex groundtruth motion.}
-		  \label{crawler:pattern2}
+		  \label{crawler:pattern2_error}
 	\end{subfigure}
-	\caption{Results with using the crawler robot.}
-    \label{crawler}
+	\caption{Comparison of errors between algorithms for the crawler robot.}
+    \label{crawler_error}
 \end{figure*}
 
 \begin{table*}[tb]
