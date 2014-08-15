@@ -325,6 +325,8 @@ For the snake robot, the first motion (dashed line in Fig. \ref{snakes:trial8_pa
 
 The motion model for the snake robot slightly underestimates the actual robot motion when unimpeded (Fig. \ref{snakes:trial8_path}) and fails to adjust for holding the robot in place (Fig. \ref{snakes:trial9_path}), since it has no notion of friction or slip. In contrast, Lucas Kanade and the salient object tracker are both able to detect the stop in forward motion when the features in the image maintain a fixed size. Compared to the actual measurement of  $0.1714$m for the stopping distance, Lucas Kanade estimates the stopping distance as $0.1831$m, while incorporating the salient object tracker slightly improves the estimate to $0.1823$m. 
 
+Figure \ref{snakes:trial8_error} shows that even though all three estimates drift from the true position of the robot, incorporating the salient object tracker helps the estimates recover when the joint is sensed. There is much more drift for the motion when the robot is held in place, Fig. \ref{snakes:trial9_error}. The Lucas Kanade with and without the object tracker both accumulate a large amount of error around frame 600, when the robot's field of view faces the side of the pipe, and later when joint moves behind the camera. Since the pipe is made of PVC and has little texture and the joint is out of the field of view, both vision based methods have poor estimates of relative motion. 
+
 Overall, Lucas Kanade has a final error estimate of $18.6 \%$ of the distance traveled for the first motion and $45.7 \%$ for the second motion, while Lucas Kanade with the object tracking has a final error estimate of $2 \%$ of total distance traveled for the first motion and $61.6 \%$ for the second motion. Incorporating the salient object tracker improves estimation for the first motion, but causes more drift for the second motion.
 
 \begin{figure*}[tb]
@@ -364,6 +366,8 @@ Overall, Lucas Kanade has a final error estimate of $18.6 \%$ of the distance tr
 \end{figure*}
 
 For the crawler robot, the first motion (dashed line in Fig. \ref{crawler:pattern1_path}) tested the ability to estimate forward distance traveled and amount of rotation, while the second motion  (dashed line in Fig. \ref{crawler:pattern2_path}) consisted of a more complicated maneuver. The robot's motion was estimated based on the trajectory followed by the operator driving the robot.
+
+Estimates of motion from tracking the April Tag (red line in Fig. \ref{crawler:pattern1_path}) are good when the robot is close to the tag, but get progressively worse further from the tag, especially when the robot rotates, because the tag cannot be localized well. Degrading position estimates further from the April Tag are even more apparent in Fig. \ref{crawler:pattern2_path}. In contrast, the vision algorithms have a consistent estimate of the robot's motion even when the tag cannot be seen, but accumulate error. 
 
 With the crawler robot, Fig. \ref{crawler:pattern1_error} shows that both Lucas Kanade and Lucas Kanade with object tracking have a good estimate of the robot's orientation and forward distance traveled. The average position error was $0.0042$m for Lucas Kanade and $0.0019$m for Lucas Kanade with object tracking. The average orientation error was $4.2^{\circ}$ and $3.7^{\circ}$ respectively. 
 
