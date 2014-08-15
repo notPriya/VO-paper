@@ -100,17 +100,15 @@ The aim of our work is to provide a method for localizing robots in confined ins
 
 \section{Introduction}
 
-\comment{Intro needs rewording.}
-
 Localization is important for inspection robots to determine the position of defects found and to navigate to inspect particular locations. In pipe inspections, localization of defects helps determine where a pipe needs to be replaced. In airplane wing inspections, the robot must navigate the wing to check if components are correctly assembled.
 
-We are interested in one framework that can estimate the motion of multiple robots. The challenge is to find a method that is general and robust enough to work on multiple platforms in different situations.
+We propose one framework that can estimate the motion of multiple types of robots. The method is general and robust enough to work on different platforms in different situations.
 
-The inspection environments we consider are slightly textured components broken up by few large edge gradients, Fig. \ref{example_image}. Since the environment is often a closed space, large changes in illumination occur when a robot with an integrated light source traverses an otherwise unlit environment. Correlating image frames becomes difficult when there are few features and large changes in illumination vary the appearances of those features.
+The inspection environments considered are slightly textured components broken up by few large edge gradients, Fig. \ref{example_image}. Since the environment is often a closed space, large changes in illumination occur when a robot with an integrated light source traverses an otherwise unlit environment. Correlating image frames becomes difficult when there are few features and large changes in illumination vary the appearances of those features.
 
-Localization using the payout length of a tether is feasible if the structure of the environment is linear and known beforehand. 
+Another approach for localization of tethered robots is to measure the payout length of the tether. Using the tether for positioning is feasible if the structure of the environment is linear and known beforehand.
 
-Another solution to localization is dead reckoning, whereby encoder information is used to estimate the robot's velocity and, via integration, the robot's position. For many robots, dead reckoning produces poor estimates because it does not account for slip.
+For localization in more varied environments, dead reckoning uses encoder information to estimate the robot's velocity and, via integration, the robot's position. For many robots, dead reckoning produces poor estimates because it does not account for slip.
 
 %Might want to motivate what feature based and direct approaches are. Cite people? Also you probably want to be citing someone for saying that feature association fails. Talk to Dey about whom to cit otherwise include a figure.
 
@@ -135,9 +133,9 @@ Visual odometry is an alternative to localization that can account for slip. Fea
     \label{example_image}
 \end{figure}
 
-The algorithms are tested on a dataset of first-person footage from pipe inspection robots posted by sewer inspection companies on Youtube. Experiments are also performed using a snake robot, Fig. \ref{robots:snake}, crawling through a pipe and using the crawler robot, Fig. \ref{robots:crawler}, driving in a mock airplane wing.
+Our approach is tested on a dataset of first-person footage from pipe inspection robots posted by sewer inspection companies on Youtube. Experiments are also performed using a snake robot (Fig. \ref{robots:snake}) crawling through a pipe, and a crawler robot (Fig. \ref{robots:crawler}) driving in a mock airplane wing. The test platforms are described further in Section \ref{section:Experimental Platforms}.
 
-We present a framework for enhancing Lucas Kanade tracking by incorporating a salient object tracker that tracks available features. We show improvement over Lucas Kanade for a dataset of pipe inspection videos as well as for the snake robot and the crawler robot. We demonstrate the generality and robustness of the algorithm on multiple platforms with different methods of locomotion and in different environments.
+We present a framework for enhancing Lucas Kanade tracking by incorporating a salient object tracker, and show improvement over Lucas Kanade for multiple experimental platforms. We demonstrate the generality and robustness of the approach for multiple robots with different methods of locomotion and in different environments.
 
 
 \begin{figure}[tb]
@@ -185,7 +183,7 @@ Since both the snake robot and the crawler robot have limited motions in the ins
 
 In general, the transform described in terms of the robot's motion will have the form,
 
-\comment{Is this correct? Should the $\alpha$ be inside the sinusoids?}
+%\comment{Is this correct? Should the $\alpha$ be inside the sinusoids?}
 
 \begin{equation*}
 W(\Delta x, \Delta y, \Delta \theta, \alpha) = \begin{bmatrix} \frac{\cos(\Delta \theta)}{\alpha} & -\frac{\sin(\Delta \theta)}{\alpha} & \frac{\Delta x}{\alpha} \\ \frac{\sin(\Delta \theta)}{\alpha} & \frac{\cos(\Delta \theta)}{\alpha} & \frac{\Delta y}{\alpha} \\ 0 & 0 & 1 \end{bmatrix}.
@@ -218,23 +216,21 @@ In order to ensure that image comparisons are temporally and spatially close, th
 
 \subsection{Salient Object Tracking}
 
-In an inspection environment, large features, such as pipe joints or airplane ribs, can be tracked to improve motion estimates. Salient features in an image can be detected using a Hough Transform.
+In an inspection environment, large features, such as pipe joints or airplane ribs, can be tracked to improve motion estimates. These salient objects can be detected in an image using a Hough Transform.
 
-Hough transform define a parameterized space based on the shape of the object being identified. For example, a straight line is parameterized by an angle $\theta$ and a length $\rho$, and a circle is parameterized by a center $(a, b)$ and a radius $r$.
+The Hough transform defines a parameterized space based on the shape of the object being identified. For example, a straight line is parameterized by an angle $\theta$ and a length $\rho$, and a circle is parameterized by a center $(a, b)$ and a radius $r$.
 
-The Hough transform first identifies points in the image on the desired object using an edge detection algorithm. These points vote for multiple objects in the parameterized space that explain the local edge information. Object candidates are regions in the parameterized space that have a large number of votes. The Matlab implementation of Hough Transforms also returns a score that measures the relative strengths of the detected objects.
+Edge points in the image are first identified using an edge detection algorithm. For each of the identified points, the Hough transform determines a set of objects that explain the local edge gradients. The point casts a vote for each of these objects in the parameterized space. The most likely objects are extracted by finding regions in the parameterized space that have a large number of votes. The Matlab implementation of Hough transforms also returns a score that measures the relative strengths of the detected objects.
 
-For tracking, the state $s$ of the salient object is described using the parameters of the Hough transform. Salient objects are tracked by updating the state estimates for each frame. The Hough transform finds a large number of candidate objects $O$ in the image. Since the robot exhibits smooth motion, the state is estimated by candidate object with a high Hough transform score that is closest to the previous state. 
+For the purposes of our approach, we track one salient object, such as a pipe joint or an edge of the airplane rib. The state of the object is represented using the parameterized space defined by the Hough transform.  Since the robots exhibit smooth motion, the current state of the object should be close to the previous state. The current state is estimated to be the parameters of an object found using the Hough transform that has both a high Hough transform score and is close to the previous state.
 
-To determine which candidate object best estimates state, we define a feature descriptor $\textbf{F}$ and a similarity score based on the feature descriptor that measures the quality of a detection. The feature descriptor is a vector containing the Hough Transform score and the difference between the Hough parameters of the candidate object and the previous state. The similarity score can be computed using a set of tuned feature weights $w$ for a given type of tracker,
-
+To estimate the current state from the set of candidate objects $O$ that are found using the Hough transform, we define a feature descriptor $\textbf{F}$ and a similarity score based on the feature descriptor that measures the quality of a detection. The feature descriptor is a vector containing the Hough Transform score and the difference between the Hough parameters of the candidate object and the previous state. The similarity score can be computed using a set of tuned feature weights $w$ for a given type of tracker,
 
 \begin{equation}
 	s_{k+1} = \argmax_{o_i \in O} w^T \textbf{F}(o_i).
 \end{equation}
 
-
-Using only the scoring metric to determine the next state of the object is noisy and prone to outliers. Often the object will display erratic movement that is not consistent with motion a physical system could produce. Tracking is improved by using a Kalman Filter with a first-order model on the state $s$ of the object and process noise $\nu \in N(0, \mu_1)$ and measurement noise $\omega \in N(0, \mu_2)$,
+Tracking the object using only the similarity score to estimate the current state is noisy and prone to outliers. Often the object will display erratic movement that is not consistent with motion a physical system could produce. Tracking is improved by using a Kalman Filter with a first-order model on the state $s$ of the object and process noise $\nu \in N(0, \mu_1)$ and measurement noise $\omega \in N(0, \mu_2)$,
 
 \begin{eqnarray*}
 s = \begin{bmatrix} P \\ \dot{P} \end{bmatrix} \\
@@ -245,26 +241,28 @@ y_k = \begin{bmatrix} I & 0 \end{bmatrix} s_k + \omega.
 
 A salient object is tracked until it moves out of the image frame and out of the field of view, at which point a new object is initialized. For the snake robot and pipe inspection videos, the search is biased towards small circles near the center of the previously tracked object. For the crawler robot, the search is biased towards lines with the same orientation as the previously tracked object.
 
+The motion of the robot can be inferred using the change in state of the salient object. Motions of the object in the x-y plane of the image correspond to planar motions of the robot  ($\Delta x$, $\Delta y$, and $\Delta \theta$). For circular objects, orientation cannot be estimated due to symmetry. Changes in the size of the object correspond to motions of the robot into the image plane ($\Delta z$). For linear objects, motion into this plane cannot be estimated because the length of the line is not a good estimate of size.
+
 \subsection{Extracting Scale}
 
-Both Lucas Kanade and the salient object tracker measure the robot's motion using image pixels. In order to get real world measurements, scale between image pixels and physical objects must be extracted.
+Both Lucas Kanade and the salient object tracker measure the robot's motion using image pixels. In order to get real world measurements, scale between image pixels and physical objects must be determined.
 
-For the pipe inspection videos and the snake robot, the scale is computed through a known prior on the pipe's radius. The Youtube videos are annotated with the radius found by physically measuring the pipe. For the snake robot, the pipe was also physically measured, but can be estimated using the robot's joint angles \cite{Enner2013}.
+For the pipe inspection videos and the snake robot, the scale is computed through the known radius of the pipe. The Youtube videos are annotated with the radius found by physically measuring the pipe. For the snake robot, the pipe radius was physically measured, but could also be estimated using the robot's joint angles \cite{Enner2013}.
 
-When salient object tracker detects a pipe joint, the radius of the joint in the image can be measured. Scale can be estimated as the ratio between the known radius of the pipe and the measured radius of the tracked joint. Estimates of the robot's distance to the joint are calculated using the scale and the camera's focal length. For situations where the camera cannot be calibrated, as with the Youtube videos, the camera's focal length is estimated to be the same as a Microsoft Kinect because it has a standard published focal length.
+When the salient object tracker detects a pipe joint, the radius of the joint in the image is measured. Scale is estimated as the ratio between the known radius of the pipe and the measured radius of the tracked joint. Estimates of the robot's distance to the joint are calculated using the scale and the camera's focal length. For situations where the camera cannot be calibrated, as with the Youtube videos, the camera's focal length is estimated to be the same as a Microsoft Kinect because it has a standard published focal length.
 
-For the airplane wing inspection videos, the camera faces the ribbed ceiling of an airplane wing at a constant distance. Since the width of the beams on the ceiling is known, scale can be estimated with noisy measurements of the beams in the image using an approach similar to \cite{Lucey14}. Scale can be repeatedly refined with new measurements of the beam width until convergence, when a fixed value is used.
+For the airplane wing inspection videos, the camera faces the ribbed ceiling of an airplane wing at a constant distance. Since the width of the beams on the ceiling is known, scale is estimated using noisy measurements of the beams in the image with an approach similar to \cite{Lucey14}. Scale is repeatedly refined with new measurements of the beam width until convergence, when a fixed value is used.
 
 Beams are located in an image using a Hough Transform, as described previously, to detect lines in the image. We assume that the two most parallel lines in an image form the boundary of a beam. Instances when the assumption is incorrect are treated as part of noise in the data and are accounted for when finding the best scale factor.
 
-We measure the pixel distance between the two parallel lines to get a noisy estimate of the width of the beam. All measurements of beam width are concatenated into a vector $\textbf{W}$ and compared to a vector $\textbf{B}$ of the known widths of the beam. The scale $\beta$ between pixel measurements and physical units is computed by minimizing the error between the known beam width and the scaled pixel beam widths,
+We measure the pixel distance between the two parallel lines to get a noisy estimate of the width of the beam. All measurements of beam width in the image are concatenated into a vector $\textbf{W}$, and are compared to a vector $\textbf{B}$ of the known physical measurements. The scale $\beta$ between pixel measurements and physical units is computed by minimizing the error between the physical beam width and the scaled pixel beam widths,
 
 \begin{equation}
 	\argmin_{\beta} ||\textbf{B} - \beta \textbf{W} ||.
 \end{equation}
 
 
-\section{Experimental Platforms}
+\section{Experimental Platforms} \label{section:Experimental Platforms}
 
 We performed experiments on a datset of pipe inspection videos from Youtube as well as on the snake robot and the crawler robot.
 
