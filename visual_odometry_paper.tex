@@ -91,12 +91,10 @@ Pittsburgh, PA 15213, USA
 
 \begin{abstract}
 
-The aim of our work is to develop a method for localizing robots in confined inspection environments that succeeds for multiple platforms. Localization of an inspection robot is essential for defects and other anomalies to be located effectively. We present a framework for enhancing Lucas Kanade tracking by incorporating a salient object tracker that tracks available features. Lucas Kanade gives an initial motion estimate by matching the current frame to a previously localized frame. Salient objects are detected using a Hough Transform and tracked with a Kalman Filter to improve motion estimates. The approach is tested on a Youtube dataset of pipe inspection videos and experimentally verified on on a snake robot traversing a pipe and a small treaded robot traversing a mock airplane wing.
+The aim of our work is to develop a method for localizing robots in confined inspection environments that succeeds for multiple platforms. Inspection robots are primarily tasked with effectively localizing defects and other anomalies, but may have different methods of locomotion and may face different environments. A single framework for localization that succeeds on many robots solves a common problem with minimal changes. We present a framework for enhancing Lucas Kanade tracking by incorporating a salient object tracker to track available features. Lucas Kanade gives an initial motion estimate by matching the current frame to a previously localized frame. Salient objects are detected using a Hough Transform and tracked with a Kalman Filter to improve motion estimates. We demonstrate the ability of the framework to generalize to multiple platforms by testing the approach on a Youtube dataset of pipe inspection videos and experimentally verifying the approach on a snake robot traversing a pipe and a small treaded robot traversing a mock airplane wing.
 
 \end{abstract}
 
-
-% Robots are ideal for inspecting confined spaces that are not easily accessible to humans. Good estimates of the robot's position are essential for defects and other anomalies to be localized effectively. The aim of this work is to improve localization for inspection robots through visual odometry. Inspection environments are challenging for vision algorithms because they are unlit and contain few large features. We improve upon the Lucas Kanade tracker by also tracking salient objects. 
 
 \section{Introduction}
 
