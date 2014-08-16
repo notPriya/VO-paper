@@ -91,24 +91,25 @@ Pittsburgh, PA 15213, USA
 
 \begin{abstract}
 
-The aim of our work is to develop a method for localizing robots in confined inspection environments that succeeds for multiple platforms. Inspection robots are primarily tasked with effectively localizing defects and other anomalies, but may have different methods of locomotion and may face different environments. A single framework for localization that succeeds on many robots solves a common problem with minimal changes. We present a framework for enhancing Lucas Kanade tracking by incorporating a salient object tracker to track available features. Lucas Kanade gives an initial motion estimate by matching the current frame to a previously localized frame. Salient objects are detected using a Hough Transform and tracked with a Kalman Filter to improve motion estimates. We demonstrate the ability of the framework to generalize to multiple platforms by testing the approach on a Youtube dataset of pipe inspection videos and experimentally verifying the approach on a snake robot traversing a pipe and a small treaded robot traversing a mock airplane wing.
+Inspection robots are valuable tools for surveillance and reconnaissance due to their ability to perform tasks in environments that humans and standard robotic platforms cannot access. In this work, we focus on inspection tasks that take place in confined spaces. In particular, we address current issues with robust localization for a variety of platforms in different confined environments. To accomplish this, we present a framework that enhances Lucas Kanade tracking by incorporating a salient object tracker. The standard Lucas Kanade algorithm is used to provide initial motion estimates of the robot's local frame, but has difficulty with large changes in illumination caused by the robot carrying its own light source. Salient environmental features are detected using a Hough Transform and subsequently tracked using a Kalman Filtering approach, but fails if salient features are unavailable or difficult to detect due to environmental conditions. We show that by combining these two approaches, we are able to leverage the individual benefits of each approach to compensate for the weaknesses of the other providing overall enhanced localization. We demonstrate the robustness of our framework by implementing it on and providing results for three separate platforms: a pipe inspection robot, a snake robot traversing the interior of a pipe, and a small treaded \emph{crawler} robot deployed in the interior of a wing box.
 
 \end{abstract}
 
 
 \section{Introduction}
 
-Localization is important for inspection robots to determine the position of defects found and to navigate to inspect particular locations. In pipe inspections, localization of defects helps determine where a pipe needs to be replaced. In airplane wing inspections, the robot must navigate the wing to check if components are correctly assembled.
+Localization is important for inspection robots to determine the position of defects found and to navigate to inspect particular locations. For example, localization of defects in pipe inspections helps determine where a pipe needs to be replaced. Similarly, in airplane wing inspections, the robot must navigate the wing to check if components are correctly assembled. 
 
-While inspection robots can be customized for the inspection task, the robots all face a common challenge of localization in environments with few repeating features. We are interested in the development of an approach that generalizes to a variety of platforms with minimial requirements on the platform and on the environment.
+While inspection robots can be customized for the inspection task at hand, there are common localization challenges faced by all robots in confined spaces, regardless of the platform or task. We are thus interested in developing algorithms that are general enough to be implemented on and effectively used for localization of a large variety of platforms with minimal tuning or other operator intensive intervention.
 
-The inspection environments considered are slightly textured components broken up by few large edge gradients, Fig. \ref{example_image}. Since the environment is often a closed space, large changes in illumination occur when a robot with an integrated light source traverses an otherwise unlit environment. Correlating image frames becomes difficult when there are few features and large changes in illumination vary the appearances of those features.
+The inspection environments considered are slightly textured components and are broken up by large edge gradients (see Figure \ref{example_image}). Since the environments considered are enclosed, large changes in illumination occur when a robot with an integrated light source traverses an otherwise unlit environment. Correlating image frames becomes difficult when there are limited features, and large changes in illumination vary the appearances of those features.
 
-Common approaches for localization are measuring robot's tether and dead reckoning. If available, measuring the payout length of the tether yields accurate estimate of position. However, it requires the structure of the environment to be linear and known beforehand. For localization in more varied environments, dead reckoning uses encoder information to estimate the robot's velocity and, via integration, the robot's position. For many robots, dead reckoning produces poor estimates because it does not account for slip.
+Common approaches for localization in confined spaces include measuring robot's tether and dead reckoning. Given that the deployment environment is known to be linear a priori, measuring the tether estimates position. For localization in more varied environments, dead reckoning can be used to process sensor information to estimate the robot's velocity and, via integration, the robot's position. In many circumstances, dead reckoning produces inaccurate localization results because slipping due to the environmental conditions or complexity of the task is not accounted for in primarily first-order dead reckoning approaches. 
+
 
 %Might want to motivate what feature based and direct approaches are. Cite people? Also you probably want to be citing someone for saying that feature association fails. Talk to Dey about whom to cit otherwise include a figure.
 
-Visual odometry is an alternative to localization that can account for slip. Feature-based approaches work well in visually rich environments containing many unique trackable features. Such approaches fail in inspection environments where point features appear identical making stable feature association difficult. For such environments, direct approaches, like Lucas Kanade, that estimate motion directly from pixel intensities perform better by using the entire image instead of tracking sparse features. Direct approaches assume differences in pixel intensities are caused by motion and have difficulty with large changes in illumination.
+Visual odometry is an alternative to localization that addresses the issues faced in both measuring tether payout and standard odometry. Visual odometry algorithms can be classified as feature-based approaches or direct approaches. Feature-based approaches work well in visually rich environments containing many unique trackable features. Such approaches fail in inspection environments where point features appear identical, making stable feature association difficult. For textured environments, direct approaches, like Lucas Kanade, that estimate motion directly from pixel intensities, perform better by using the entire image instead of tracking sparse features. Direct approaches assume differences in pixel intensities are caused by motion and have difficulty with large changes in illumination.
 
 \begin{figure}[tb]
 	\centering
@@ -128,10 +129,6 @@ Visual odometry is an alternative to localization that can account for slip. Fea
     \label{example_image}
 \end{figure}
 
-We present a framework for enhancing Lucas Kanade tracking by incorporating a salient object tracker, and show improvement over Lucas Kanade for multiple experimental platforms. We succeed by combining a direct approach to leverage motion information across the entire image with a feature based approach to maintain illumination and drift invariance. We demonstrate the generality and robustness of the approach for multiple robots with different methods of locomotion and in different environments.
-
-Our approach is tested on a dataset of first-person footage from pipe inspection robots posted by sewer inspection companies on Youtube. Experiments are also performed using a snake robot (Fig. \ref{robots:snake}) crawling through a pipe, and a crawler robot (Fig. \ref{robots:crawler}) driving in a mock airplane wing. The test platforms are described further in Section \ref{section:Experimental Platforms}.
-
 \begin{figure}[tb]
 	\centering
 	\begin{subfigure}{.45\columnwidth}
@@ -146,9 +143,15 @@ Our approach is tested on a dataset of first-person footage from pipe inspection
 		  \subcaption{}
 		  \label{robots:crawler}
 	\end{subfigure}
-	\caption{Photographs of the Carnegie Mellon University Biorobotics Lab's Unified Modular Snake Robot \Subref{robots:snake} and Crawler Robot \Subref{robots:crawler}.}
+	\caption{Photographs of the Carnegie Mellon University Biorobotics Lab's \Subref{robots:snake} Unified Modular Snake Robot \Subref{robots:crawler} and Crawler Robot.}
     \label{robots}
 \end{figure}
+
+
+We present a framework for enhancing Lucas Kanade tracking by incorporating a salient object tracker, and show improvement over Lucas Kanade for multiple experimental platforms. We combine a direct approach to leverage motion information across the entire image with a feature based approach to maintain illumination and drift invariance. We demonstrate the generality and robustness of the approach for multiple robots with different methods of locomotion operating in different environments.
+
+Our approach is tested on a dataset of videos from pipe inspection robots published by sewer inspection companies on Youtube. Experiments were also performed using a snake robot (Fig. \ref{robots:snake}) crawling through a pipe, and a crawler robot (Fig. \ref{robots:crawler}) driving in a mock airplane wing. The test platforms are described further in Section \ref{section:Experimental Platforms}.
+
 
 \section{Approach}
 
@@ -163,7 +166,7 @@ Figure \ref{approach} shows an overview of the integration of a salient object t
 
 \subsection{Lucas Kanade Tracking}
 
-Lucas Kanade transforms the current frame $I$ to match a template frame $T$, which is a previously localized image frame that is temporally near the current frame. The transform $W$ is computed by optimizing the parameters $p$ of the transform to minimize the error in pixel intensities over all pixels $\psi$,
+The Lucas Kanade algorithm transforms the current frame $I$ to match a template frame $T$, which is a previously localized image frame that is temporally near the current frame. The transform $W$ between the current frame and the template frame is computed by optimizing the parameters $p$ of the transform to minimize the error in pixel intensities over all pixels $\psi$,
 
 \begin{equation} \label{eq:lkt_min}
     \argmin_p \sum_{\psi} [I(W(\psi, p)) - T(\psi)]^2.
@@ -175,7 +178,7 @@ Since both the snake robot and the crawler robot have limited motions in the ins
 	\alpha = 1 - \frac{\Delta z}{f}.
 \end{equation}
 
-In general, the transform described in terms of the robot's motion will have the form,
+In general, the transform between the current frame and the template frame described in terms of the robot's motion will have the form,
 
 %\comment{Is this correct? Should the $\alpha$ be inside the sinusoids?}
 
@@ -183,13 +186,13 @@ In general, the transform described in terms of the robot's motion will have the
 W(\Delta x, \Delta y, \Delta \theta, \alpha) = \begin{bmatrix} \frac{\cos(\Delta \theta)}{\alpha} & -\frac{\sin(\Delta \theta)}{\alpha} & \frac{\Delta x}{\alpha} \\ \frac{\sin(\Delta \theta)}{\alpha} & \frac{\cos(\Delta \theta)}{\alpha} & \frac{\Delta y}{\alpha} \\ 0 & 0 & 1 \end{bmatrix}.
 \end{equation*}
 
-Since the image frames being compared are temporally close, they must also be spatially close. Linearizing around small rotations gives a simpler transform,
+Since the image frames being compared are temporally close, they must also be spatially close. Linearizing around small rotations gives an approximation to the transform,
 
 \begin{equation*}
 W(\Delta x, \Delta y, \Delta \theta, \alpha) = \begin{bmatrix} \frac{1}{\alpha} & -\frac{\Delta \theta}{\alpha} & \frac{\Delta x}{\alpha} \\ \frac{\Delta \theta}{\alpha} & \frac{1}{\alpha} & \frac{\Delta y}{\alpha} \\ 0 & 0 & 1 \end{bmatrix}.
 \end{equation*}
 
-For convenience during the Lucas Kanade minimization, the transform can be rewritten in terms of a set of independent parameters,
+For convenience, during the Lucas Kanade minimization, the transform can be rewritten in terms of a set of independent parameters,
 
 \begin{eqnarray}
 \begin{split} \label{eq:warp_param_conversion}
@@ -202,7 +205,7 @@ p_4 &=& \frac{1}{\alpha} - 1\\
 W(p) = \begin{bmatrix} 1+p_4 & -p_3 & p_1 \\ p_3 & 1+p_4 & p_2 \\ 0 & 0 & 1 \end{bmatrix}.
 \end{eqnarray}
 
-We solve the resulting minimization problem \eqref{eq:lkt_min} with the parameterized transform \eqref{eq:param_warp} using the method of Lucas and Kanade \cite{Lucas81, lucaskanade}, giving the relative motion between the template and the current image frame. The robot's motion can be recovered from the transform parameters using Equation \eqref{eq:z_motion_conversion} and Equation \eqref{eq:warp_param_conversion}.
+We solve the resulting minimization problem \eqref{eq:lkt_min} with the parameterized transform \eqref{eq:param_warp} using the method of Lucas and Kanade \cite{Lucas81, lucaskanade}, which provides an estimate of the relative motion between the template and the current image frame. The robot's motion can be recovered from the transform parameters using Equation \eqref{eq:z_motion_conversion} and Equation \eqref{eq:warp_param_conversion}.
 
 Since motion is determined relative to the template frame, errors in the localization of the template compound when it is updated. Therefore, instead of updating the template every frame, the same template is used to localize several consecutive images, reducing drift.
 
@@ -214,9 +217,9 @@ In an inspection environment, large features, such as pipe joints or airplane ri
 
 The Hough transform defines a parameterized space based on the shape of the object being identified. For example, a straight line is parameterized by an angle $\theta$ and a length $\rho$, and a circle is parameterized by a center $(a, b)$ and a radius $r$.
 
-Edge points in the image are first identified using an edge detection algorithm. For each of the identified points, the Hough transform determines a set of objects that explain the local edge gradients. The point casts a vote for each of these objects in the parameterized space. The most likely objects are extracted by finding regions in the parameterized space that have a large number of votes. The Matlab implementation of Hough transforms also returns a score that measures the relative strengths of the detected objects.
+Points on edges in the image are first identified using an edge detection algorithm. For each of the identified points, the Hough transform determines a set of objects that explain the local edge gradients. The point casts a vote for each of these objects in the parameterized space. The most likely objects are extracted by finding regions in the parameterized space that have a large number of votes. The Matlab implementation of Hough transforms also returns a score that measures the relative strengths of the detected objects.
 
-For the purposes of our approach, we track one salient object, such as a pipe joint or an edge of the airplane rib. The state of the object is represented using the parameterized space defined by the Hough transform.  Since the robots exhibit smooth motion, the current state of the object should be close to the previous state. The current state is estimated to be the parameters of an object found using the Hough transform that has both a high Hough transform score and is close to the previous state.
+In our approach, we track one salient object, such as a pipe joint or an edge of the airplane rib. The state of the object is represented using the parameterized space defined by the Hough transform.  Since the robots exhibit smooth motion, the current state of the object should be close to the previous state. The current state is estimated to be the parameters of an object found using the Hough transform that has both a high Hough transform score and is close to the previous state.
 
 To estimate the current state from the set of candidate objects $O$ that are found using the Hough transform, we define a feature descriptor $\textbf{F}$ and a similarity score based on the feature descriptor that measures the quality of a detection. The feature descriptor is a vector containing the Hough Transform score and the difference between the Hough parameters of the candidate object and the previous state. The similarity score can be computed using a set of tuned feature weights $w$ for a given type of tracker,
 
@@ -224,7 +227,7 @@ To estimate the current state from the set of candidate objects $O$ that are fou
 	s_{k+1} = \argmax_{o_i \in O} w^T \textbf{F}(o_i).
 \end{equation}
 
-Tracking the object using only the similarity score to estimate the current state is noisy and prone to outliers. Often the object will display erratic movement that is not consistent with motion a physical system could produce. Tracking is improved by using a Kalman Filter with a first-order model on the state $s$ of the object and process noise $\nu \in N(0, \mu_1)$ and measurement noise $\omega \in N(0, \mu_2)$,
+Tracking the object using only the similarity score to estimate the current state is noisy and prone to outliers. Often the object will display erratic movement that is not consistent with motion of the physical system. Tracking is improved by using a Kalman Filter with a first-order model of the state $s$ of the object, with process noise $\nu \in N(0, \mu_1)$ and measurement noise $\omega \in N(0, \mu_2)$,
 
 \begin{eqnarray*}
 s = \begin{bmatrix} P \\ \dot{P} \end{bmatrix} \\
@@ -239,7 +242,7 @@ The motion of the robot can be inferred using the change in state of the salient
 
 \subsection{Extracting Scale}
 
-Both Lucas Kanade and the salient object tracker measure the robot's motion using image pixels. In order to get real world measurements, scale between image pixels and physical objects must be determined.
+Both Lucas Kanade and the salient object tracker measure the robot's motion using image pixels. In order extract physical distances, scale between image pixels and physical objects must be determined.
 
 For the pipe inspection videos and the snake robot, the scale is computed through the known radius of the pipe. The Youtube videos are annotated with the radius found by physically measuring the pipe. For the snake robot, the pipe radius was physically measured, but could also be estimated using the robot's joint angles \cite{Enner2013}.
 
@@ -260,15 +263,15 @@ We measure the pixel distance between the two parallel lines to get a noisy esti
 
 We performed experiments on a datset of pipe inspection videos from Youtube as well as on the snake robot and the crawler robot.
 
-The Youtube dataset consists of four videos \cite{pipevideo2, pipevideo4, pipevideo5, pipevideo6} posted by pipe inspection companies of first-person footage from inspection robots equipped with lighting and a camera as they navigate through a pipe. These videos are annotated with ground truth distance that the robot has traveled as measured via the robot's tether. This data contains videos taken in pipes of varying size, material, and fog and water conditions.
+The Youtube dataset consists of four videos \cite{pipevideo2, pipevideo4, pipevideo5, pipevideo6} posted by pipe inspection companies of first-person footage from inspection robots equipped with lighting and a camera as they navigate through a pipe. These videos are annotated with ground truth distance that the robot has traveled as measured via the robot's tether. This data contains videos taken in pipes of varying size, material, and conditions.
 
-The snake robot \cite{Wright2012} consists of a series of identical 1-degree-of-freedom (DOF) joints oriented at $90^{\circ}$ to one another and locomotes using cyclic patterns of joint motion. Previous work with the snake robot has used a motion model \cite{Enner2012} to estimate the motion of the robot in straight pipes \cite{Enner2013}. This approach uses the joint angles and kinematics of the snake robot to estimate how much the snake has moved. This is analogous to a integrating the encoders on a wheeled robotic system, and does not account for slip.
+The snake robot \cite{Wright2012} consists of a series of identical 1-degree-of-freedom (DOF) joints oriented at $90^{\circ}$ relative to one another and locomotes using cyclic patterns of joint motion. Previous work with the snake robot has used a motion model \cite{Enner2012} to estimate the motion of the robot in straight pipes \cite{Enner2013}. This approach uses the joint angles and kinematics of the snake robot to estimate how much the snake has moved. This is analogous to a integrating the encoders on a wheeled robotic system, and does not account for slip.
 
-The crawler robot is a small treaded robot with a camera facing up and a camera facing towards the rear, built to investigate airplane wings. Localization is provided by tracking a fixed AR tag with the rear-facing camera. Such localization fails if the April Tag is out of the field of view of the camera, or when the robot is far from the tag and pixel errors in tag localization correspond to large errors in distance.
+The crawler robot is a small treaded robot with a camera facing up and a camera facing towards the rear, built to investigate airplane wings. Localization is provided by tracking a fixed April Tag with the rear-facing camera. Such localization fails if the April Tag is out of the field of view of the camera, or when the robot is far from the tag and pixel errors in tag localization correspond to large errors in distance.
 
 \section{Experiment Results}
 
-We test the accuracy of our implementation on a Youtube dataset of four different pipe inspection videos that were split into a total of five 1 minute segments for ease of processing. Sections where the robot turned its camera away from downstream of the pipe were cropped out because the joint was out of the field of view and could not be tracked. If we had control over the robot, the detector could be paused until the robot returns to looking downstream. Every frame in this dataset is correlated with an estimate of forward distance traveled measured using the robot's tether. To avoid incorrect accuracy estimates, the dataset is limited to sections of the video where the robot is moving forward or stopped and the tether estimate reflects the robots motion.
+We tested our algorithm on a Youtube dataset of four different pipe inspection videos that were split into a total of five 1-minute segments for ease of processing. This dataset was used to measure accuracy on a several videos with ground truth. Sections where the robot turned its camera away from the downstream direction of the pipe were removed because the joint was not visible. If we had control over the robot, cropping the video would not be necessary because the tracker could be paused until the robot returned to looking downstream. Every frame in this dataset is correlated with an estimate of forward distance traveled measured using the robot's tether. To avoid incorrect accuracy estimates, the dataset is limited to sections of the video where the robot is moving forward or stopped, and the tether estimate reflects the robots motion well.
 
 \begin{table*}[tb] 
 	\centering
@@ -305,27 +308,27 @@ We test the accuracy of our implementation on a Youtube dataset of four differen
 \end{table*}
 
 
-Overall, the salient object tracker improves the Lucas Kanade position estimates by reducing the average error in Table \ref{table:youtube_results}. On average, maximum error is reduced by $36 \%$ and mean error is reduced by $31 \%$. For videos 3 and 4, the object tracker fails, resulting in a higher maximum error and higher mean error on these videos. The salient object tracker fails repeatedly when there is not enough light to enhance textures along the pipe wall, making it difficult to detect joints.
+Overall, the salient object tracker improves the Lucas Kanade position estimates by reducing the average error as shown in Table \ref{table:youtube_results}. On average, incorporating the salient object tracker reduces the maximum error of Lucas Kanade by $36 \%$ and the mean error by $31 \%$. For videos 3 and 4, the salient object tracker fails when there is not enough light to enhance textures along the pipe wall, making it difficult to detect joints. Repeated failures of the object tracker results in a higher maximum error and higher mean error on these videos.
 
-We implemented a filter that thresholds the average pixel intensity over the entire video to determine apriori whether a particular pipe video has enough lighting for the salient object tracker to perform well. Videos 1 and 2 had the highest average pixel intensity values and also corresponded to videos where the salient object tracker improves upon the Lucas Kanade algorithm the most, Fig. \ref{youtube:error_over_time}. These two videos improve the mean error by $76 \%$ on average.
 
-%Since we can control the lighting of a robot, we need only make sure that this condition is met before conducting experiments.
+We threshold the average pixel intensity value over the entire video to determine apriori whether a particular pipe video has enough lighting for the salient object tracker to perform well. Videos 1 and 2 had the highest average pixel intensity values and also corresponded to videos where the salient object tracker improves upon the Lucas Kanade algorithm the most (see Figure \ref{youtube:error_over_time}). These two videos improved the mean error by $76 \%$ on average.
+
 
 \begin{figure}[tb]
 	\centering
 	\includegraphics[width=\columnwidth]{youtube_err_v_time.png}
-	\caption{Error between the algorithms and the groundtruth for the Youtube videos.}
+	\caption{Error between the different algorithms and the groundtruth for the Youtube videos.}
     \label{youtube:error_over_time}
 \end{figure}
 
 
-We carried out experiments with the snake robot and the crawler robot to compare the performance of Lucas Kanade with and without salient object tracking. We collected data of two sets of motions with each of these robots.
+We carried out experiments with the snake robot and the crawler robot to compare the performance of Lucas Kanade with and without salient object tracking. We collected data for two sets of motions with each of these robots.
 
 For the snake robot, the first motion (dashed line in Fig. \ref{snakes:trial8_path}) consisted of unimpeded motion within the pipe, while the second motion (dashed line in Fig. \ref{snakes:trial9_path}) simulated infinite slip when the robot was held in place. The groundtruth was estimated by measuring the amount of tether released at the end of each motion and when the robot was held in place.
 
-The motion model for the snake robot slightly underestimates the actual robot motion when unimpeded (Fig. \ref{snakes:trial8_path}) and fails to adjust for holding the robot in place (Fig. \ref{snakes:trial9_path}), since it has no notion of friction or slip. In contrast, Lucas Kanade and the salient object tracker are both able to detect the stop in forward motion when the features in the image maintain a fixed size. Compared to the actual measurement of  $0.1714$m for the stopping distance, Lucas Kanade estimates the stopping distance as $0.1831$m, while incorporating the salient object tracker slightly improves the estimate to $0.1823$m. 
+The motion model for the snake robot slightly underestimates the actual robot motion when unimpeded (Fig. \ref{snakes:trial8_path}) and fails to adjust for holding the robot in place (Fig. \ref{snakes:trial9_path}), since it has no notion of friction or slip. In contrast, Lucas Kanade and the salient object tracker are maintian a consistent position estimate when the robot is held in place. Compared to the actual measurement of $0.1714$m for the point when the robot was held in place, the Lucas Kanade estimate is $0.1831$m, while incorporating the salient object tracker slightly improves the estimate to $0.1823$m. 
 
-Figure \ref{snakes:trial8_error} shows that even though all three estimates drift from the true position of the robot, incorporating the salient object tracker helps the estimates recover when the joint is sensed. There is much more drift for the motion when the robot is held in place, Fig. \ref{snakes:trial9_error}. The Lucas Kanade with and without the object tracker both accumulate a large amount of error around frame 600, when the robot's field of view faces the side of the pipe, and later when joint moves behind the camera. Since the pipe is made of PVC and has little texture and the joint is out of the field of view, both vision based methods have poor estimates of relative motion. 
+Figure \ref{snakes:trial8_error} shows that even though all three estimates drift from the true position of the robot, incorporating the salient object tracker helps improve motion estimates from Lucas Kanade. In Figure \ref{snakes:trial9_error}, Lucas Kanade with and without the object tracker both accumulate a large amount of error after frame 600, when the robot's field of view faces the side of the pipe and when joint moves behind the camera. Since the pipe is made of PVC and has little texture and the joint is out of the field of view, both vision based methods have poor estimates of relative motion.
 
 Overall, Lucas Kanade has a final error estimate of $18.6 \%$ of the distance traveled for the first motion and $45.7 \%$ for the second motion, while Lucas Kanade with the object tracking has a final error estimate of $2 \%$ of total distance traveled for the first motion and $61.6 \%$ for the second motion. Incorporating the salient object tracker improves estimation for the first motion, but causes more drift for the second motion.
 
@@ -334,16 +337,16 @@ Overall, Lucas Kanade has a final error estimate of $18.6 \%$ of the distance tr
 	\begin{subfigure}{\columnwidth}
 		  \centering
 		  \includegraphics[width=\columnwidth]{trial8_path.png}
-		  \subcaption{Results for allowing the robot to drive continuously within the pipe.}
+		  \subcaption{Paths produced by different motion estimates when the robot drives continuously within the pipe.}
 		  \label{snakes:trial8_path}
 	\end{subfigure}
 	\begin{subfigure}{\columnwidth}
 		  \centering
 		  \includegraphics[width=\columnwidth]{trial9_path.png}
-		  \subcaption{Results for holding the robot in place while driving within the pipe.}
+		  \subcaption{Paths produced by different motion estimates when the robot is temporarily held in place while driving within the pipe.}
 		  \label{snakes:trial9_path}
 	\end{subfigure}
-	\caption{Odometry paths generated for the snake robot.}
+	\caption{Odometry paths generated for multiple motions using the snake robot.}
     \label{snakes_path}
 \end{figure*}
 
@@ -351,23 +354,23 @@ Overall, Lucas Kanade has a final error estimate of $18.6 \%$ of the distance tr
 	\centering
 	\begin{subfigure}{\columnwidth}
 		  \centering
-		  \includegraphics[width=\columnwidth]{trial8_results.png}
-		  \subcaption{Error between algorithms for driving the robot continuously within the pipe.}
+		  \includegraphics[width=\columnwidth]{trial8_rms.png}
+		  \subcaption{Error between different algorithms for driving the robot continuously within the pipe.}
 		  \label{snakes:trial8_error}
 	\end{subfigure}
 	\begin{subfigure}{\columnwidth}
 		  \centering
-		  \includegraphics[width=\columnwidth]{trial9_results.png}
-		  \subcaption{Error between algorithms for holding the robot in place while driving within the pipe.}
+		  \includegraphics[width=\columnwidth]{trial9_rms.png}
+		  \subcaption{Error between different algorithms for temporarily holding the robot in place while driving within the pipe.}
 		  \label{snakes:trial9_error}
 	\end{subfigure}
-	\caption{Comparison of errors between algorithms for the snake robot.}
+	\caption{Comparison of errors between algorithms for multiple motions using the snake robot.}
     \label{snakes_error}
 \end{figure*}
 
-For the crawler robot, the first motion (dashed line in Fig. \ref{crawler:pattern1_path}) tested the ability to estimate forward distance traveled and amount of rotation, while the second motion  (dashed line in Fig. \ref{crawler:pattern2_path}) consisted of a more complicated maneuver. The robot's motion was estimated based on the trajectory followed by the operator driving the robot.
+For the crawler robot, the first motion (dashed line in Fig. \ref{crawler:pattern1_path}) tested the ability to estimate forward distance traveled and orientation, while the second motion  (dashed line in Fig. \ref{crawler:pattern2_path}) consisted of a more complicated maneuver. The robot's motion was estimated based on the trajectory followed by the operator driving the robot.
 
-Estimates of motion from tracking the April Tag (red line in Fig. \ref{crawler:pattern1_path}) are good when the robot is close to the tag, but get progressively worse further from the tag, especially when the robot rotates, because the tag cannot be localized well. Degrading position estimates further from the April Tag are even more apparent in Fig. \ref{crawler:pattern2_path}. In contrast, the vision algorithms have a consistent estimate of the robot's motion even when the tag cannot be seen, but accumulate error. 
+Estimates of motion from tracking the April Tag (red line in Fig. \ref{crawler:pattern1_path}) are good when the robot is close to the tag, but get progressively worse further from the tag, especially when the robot rotates, because the tag cannot be localized well. Degrading position estimates further from the April Tag are even more apparent in Fig. \ref{crawler:pattern2_path}. In contrast, the vision algorithms have a consistent estimate of the robot's motion even when the tag cannot be seen, and have better estimates than the April Tag tracker when further from the April Tag. 
 
 With the crawler robot, Fig. \ref{crawler:pattern1_error} shows that both Lucas Kanade and Lucas Kanade with object tracking have a good estimate of the robot's orientation and forward distance traveled. The average position error was $0.0042$m for Lucas Kanade and $0.0019$m for Lucas Kanade with object tracking. The average orientation error was $4.2^{\circ}$ and $3.7^{\circ}$ respectively. 
 
@@ -380,16 +383,16 @@ Table \ref{table:crawler_results} shows that though the pose estimate is poor, a
 	\begin{subfigure}{\columnwidth}
 		  \centering
 		  \includegraphics[width=\columnwidth]{crawler1_path.png}
-		  \subcaption{Results for a simple groundtruth motion.}
+		  \subcaption{Paths produced by different motion estimates for a simple groundtruth motion.}
 		  \label{crawler:pattern1_path}
 	\end{subfigure}
 	\begin{subfigure}{\columnwidth}
 		  \centering
 		  \includegraphics[width=\columnwidth]{crawler2_path.png}
-		  \subcaption{Results for a more complex groundtruth motion.}
+		  \subcaption{Paths produced by different motion estimates for a more complex groundtruth motion.}
 		  \label{crawler:pattern2_path}
 	\end{subfigure}
-	\caption{Odometry paths generated for the crawler robot.}
+	\caption{Odometry paths generated for multiple motions using the crawler robot.}
     \label{crawler_path}
 \end{figure*}
 
@@ -397,17 +400,17 @@ Table \ref{table:crawler_results} shows that though the pose estimate is poor, a
 	\centering
 	\begin{subfigure}{\columnwidth}
 		  \centering
-		  \includegraphics[width=\columnwidth]{crawler1_results.png}
+		  \includegraphics[width=\columnwidth]{crawler1_rms.png}
 		  \subcaption{Error between algorithms and a simple groundtruth motion.}
 		  \label{crawler:pattern1_error}
 	\end{subfigure}
 	\begin{subfigure}{\columnwidth}
 		  \centering
-		  \includegraphics[width=\columnwidth]{crawler2_results.png}
+		  \includegraphics[width=\columnwidth]{crawler2_rms.png}
 		  \subcaption{Error between algorithms and a more complex groundtruth motion.}
 		  \label{crawler:pattern2_error}
 	\end{subfigure}
-	\caption{Comparison of errors between algorithms for the crawler robot.}
+	\caption{Comparison of errors between algorithms for multiple motions using the crawler robot.}
     \label{crawler_error}
 \end{figure*}
 
@@ -415,7 +418,7 @@ Table \ref{table:crawler_results} shows that though the pose estimate is poor, a
 	\centering
 	\footnotesize
 	\setlength{\tabcolsep}{.6em}
-	\caption{Error Statistics on the Crawler Experiment}
+	\caption{Error Statistics for multiple motions with the Crawler Robot}
 	\label{table:crawler_results}
 	\begin{tabular}{c|c|c|c|c|}
 	\hline
