@@ -162,14 +162,33 @@ We test our approach on a dataset of videos from pipe inspection robots publishe
 \section{Approach}
 
 %Figure \ref{approach} shows an overview of the integration of a salient object tracker with the Lucas Kanade pipeline. Lucas Kanade produces an estimate of motion by comparing a new image frame with a previously localized frame. The salient object tracker uses a Hough Transform to detect an object in the new image frame that is tracked via a Kalman Filter, producing another estimate of motion. The robot's motion is estimated as the weighted average of the estimations produced independently by Lucas Kanade and the object tracker. The final motion estimate is integrated to determine the state of the robot relative to its initial position.
+
+
+Since inspection environments are textured with few features, direct approaches are more appropriate. Specifically, Lucas-Kanade \cite{Lucas81, lucaskanade} is used the primary motion estimate. Direct approaches can be combined with a feature-based approach to gain illumination invariance. Structural features of the environment are detected using a Hough transform \cite{Hough, GeneralizeHough} and tracked using a Kalman filter \cite{Kalman}. Estimates of pose from the direct approach and the feature-based approach are combined using a high-level Kalman filter observing the robot's motion. The Kalman filter helps smooth noise and detect measurement outliers and provides a framework for combining multiple pose estimates. Since the motion measurements are in the image frame, the scale between the image and the environment must be extracted. The size of the tracked objects in the image is compared to the known size of the object in the environment. These comparisons give the scale between the robot's motion estimated by the visual odometry algorithm and the robot's motion in the environment. Figure \ref{approach} provides an overview of the integration of a salient object tracker with Lucas-Kanade.
+
+
+%\begin{itemize}
+%\item Since direct approaches work for textured environments with few features, it is more appropriate for inspection evironments. We can use a direct approach to get an estimate of motion that is illumination invariant. We specifically use Lucas-Kanade as our direct approach.
 %
-%\begin{figure}[tb]
-%	\centering
-%	\includegraphics[height=200px]{approach_overview.png}
-%	\caption{Visual odometry pipeline with feature tracking.}
-%    \label{approach}
-%\end{figure}
+%\item We want to combine this with a feature-based approach to get illumination invariance. We create a salient object tracker, by combining a Hough transform to detect objects with a Kalman filter to track them.
 %
+%\item We propose to combine both approaches using a Kalman filter. Kalman filter helps smooth out noise. We have a framework to add other estimates of motion easily. We can detect outliers using the covariance.
+%
+%\item This gives us a final estimate of motion. We can integrate the motions to get a position.
+%
+%\item Since the measurements of the visual odometry algorithms are in the image frame, we need to extract scale between the image and the environment. We do this in the scale extraction process, by comparing tracked objects and their known size in the environment.
+%
+%\item This gives us an estimate of pose in the real world.
+%\end{itemize}
+
+
+\begin{figure}[tb]
+	\centering
+	\includegraphics[height=200px]{approach_overview.png}
+	\caption{Visual odometry pipeline with feature tracking.}
+    \label{approach}
+\end{figure}
+
 %\subsection{Lucas Kanade Tracking}
 %
 %The Lucas Kanade algorithm transforms the current frame $I$ to match a template frame $T$, which is a previously localized image frame that is temporally near the current frame. The transform $W$ between the current frame and the template frame is computed by optimizing the parameters $p$ of the transform to minimize the error in pixel intensities over all pixels $\psi$,
