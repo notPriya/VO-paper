@@ -191,6 +191,8 @@ We test our approach on a dataset of videos from pipe inspection robots publishe
 
 \subsection{Lucas-Kanade}
 
+\comment{You should really motivate why Lucas-Kanade here.}
+
 Direct approaches compare the pixel intensities of two images to determine the correspondence between them. One image is transformed to match the other image, which serves as a template. Lucas-Kanade finds the transform that minimizes the total error in pixel intensities between the transformed image and the template image. The transform is described using a set of parameters that are optimized by Lucas-Kanade. The parameters are refined using the gradient of the template image to minimize the error in pixel intensities. 
 
 For all pixels $\psi$, the error between the transformed image $I$ and the template image $T$ is computed. Lucas-Kanade finds the parameters $p$ of the transform $W$ that minimizes the sum of squared error in intensity, 
@@ -199,7 +201,7 @@ For all pixels $\psi$, the error between the transformed image $I$ and the templ
     \argmin_p \sum_{\psi} [I(W(\psi, p)) - T(\psi)]^2.
 \end{equation}
 
-Lucas-Kanade is used to find the relative motion between image frames in the inspection footage taken by the robot. Every image in the video is localized with respect to an earlier frame that has already been localized. Since the robot has smooth movement, image frames are compared to nearby frames in the video to ensure sufficient visual similarity between the images to accurately relate them.
+Lucas-Kanade is used to find the relative motion between image frames in the inspection footage taken by the robot. Every image in the video is localized with respect to an earlier frame that has already been localized. Since the robot has little motion between consecutive frames, image frames are compared to nearby frames in the video to ensure sufficient visual similarity between the images to accurately relate them.
 
 For our applications, since the robot has limited motion in the inspection environments, the image transform is constrained to rotations, translations, and scale. Motions of the robot in the image plane ($\Delta x$, $\Delta y$, and $\Delta \theta$) correspond directly to motions of the image. Motion of the robot into the image plane ($\Delta z$) manifests as a change in image scale, proportional to the focal length $f$ of the camera. To simplify further equations, the robot's motion into the image plane can be written using the change in image scale $\alpha$,
 
@@ -246,35 +248,48 @@ Since motion is determined relative to the template image, errors in the localiz
 \comment{Integrate this better with the paragraph.} In order to ensure that image comparisons are temporally and spatially close, the template is updated to the last localized image frame when the robot has traveled beyond some threshold distance and the field of view has changed.
 \comment{How do you choose this threshold?  What happens if the field of view hasn’t really changed.  Exactly when do you decide the linearization fails…justify your decisions.} This threshold is set by the user based on the environment, so that images have little motion up to the point of the thresholded distance. If objects are close to the camera, this number must be smaller than if the objects were further away. If the field of view hasn't changed then we update more than necessary. If the field of view has changed, the linearization will be poor and Lucas-Kanade will have worse performance.
 
-%\subsection{Salient Object Tracking}
-%
+\subsection{Salient Object Tracking}
+
+In the inspection environments considered, structural elements, such as pipe joints or airplane ribs, can be tracked to improve motion estimates and illumination invariance. These repeating structural elements are salient objects distinguishable from the textured environment, making them ideal for tracking. Since these salient objects are geometric shapes, the objects can be detected by determining which points in the image form the boundary of a given shape. Points on the boundary of the shape are detected using an edge detection algorithm. The Hough transform is used to determine which points correspond to the same shape. The location of the object is then tracked using a Kalman filter. The motion of the robot is inferred from the motion of the object.
+
 %In an inspection environment, large features, such as pipe joints or airplane ribs, can be tracked to improve motion estimates. These salient objects can be detected in an image using a Hough Transform.
-%
-%The Hough transform defines a parameterized space based on the shape of the object being identified. For example, a straight line is parameterized by an angle $\theta$ and a length $\rho$, and a circle is parameterized by a center $(a, b)$ and a radius $r$.
-%
-%Points on edges in the image are first identified using an edge detection algorithm. For each of the identified points, the Hough transform determines a set of objects that explain the local edge gradients. The point casts a vote for each of these objects in the parameterized space. The most likely objects are extracted by finding regions in the parameterized space that have a large number of votes. The Matlab implementation of Hough transforms also returns a score that measures the relative strengths of the detected objects.
-%
+
+In our approach, we track one salient object, such as a pipe joint or an edge of the airplane rib, in each frame of the inspection footage taken by the robot. If multiple objects are present, the object with the stronger Hough transform score is used to initialize the tracker. The Hough transform parameters define the location of the object and can be used as the object's state when tracking. Since the robot has little motion between consecutive frames of the video, the state of the object is assumed to be close to the previous state.
+
 %In our approach, we track one salient object, such as a pipe joint or an edge of the airplane rib. The state of the object is represented using the parameterized space defined by the Hough transform.  Since the robots exhibit smooth motion, the current state of the object should be close to the previous state. The current state is estimated to be the parameters of an object found using the Hough transform that has both a high Hough transform score and is close to the previous state.
-%
+
+Salient objects are detected by finding several points that form the boundary of a geometric shape. Whether a set of points form a given shape cannot be clearly determined by looking at x-y image locations of the points. Instead, the Hough transform is used to transform points from the x-y space to a parameterized space, where points that correspond to the same shape have one common parameterization. For example, a straight line is parameterized by the angle and length of the normal vector to that line from a reference point, usually a corner of the image. While each point on the line corresponds to multiple potential lines passing through that point, all points share one correspondence in common.
+
+%The Hough transform defines a parameterized space based on the shape of the object being identified. For example, a straight line is parameterized by an angle $\theta$ and a length $\rho$, and a circle is parameterized by a center $(a, b)$ and a radius $r$.
+
+For each point detected using an edge detection algorithm, the Hough transform determines a set of shapes that the point corresponds to and explains. A shape that can be explained by multiple points has more evidence for being a true detection. The Hough transform finds shapes that are explained by a large number of points and are likely to be present in the image. The Matlab implementation of Hough transforms also returns a score that measures the relative strengths of the detected objects.
+
+%Points on edges in the image are first identified using an edge detection algorithm. For each of the identified points, the Hough transform determines a set of objects that explain the local edge gradients. The point casts a vote for each of these objects in the parameterized space. The most likely objects are extracted by finding regions in the parameterized space that have a large number of votes. The Matlab implementation of Hough transforms also returns a score that measures the relative strengths of the detected objects.
+
+The Hough transform finds multiple geometric shapes in an image that may correspond to the object being tracked. To determine whether any of the candidate object detections are good estimates of the tracked object, a similarity score is defined to measure the quality of the detection. To compute the score, each candidate object is described by a feature descriptor that is a vector containing the Hough transform score and the difference in Hough parameters between the candidate and the previous state. The feature descriptor contains information about the quality of the Hough detection and the similarity to the previous state. The similarity score is computed using the feature descriptor $\textbf{F}$ and a set of tuned feature weights $w$ for a given type of tracker. The state of the object is estimated as the detection in the set of candidate object detections $O$ with the best score,
+
 %To estimate the current state from the set of candidate objects $O$ that are found using the Hough transform, we define a feature descriptor $\textbf{F}$ and a similarity score based on the feature descriptor that measures the quality of a detection. The feature descriptor is a vector containing the Hough Transform score and the difference between the Hough parameters of the candidate object and the previous state. The similarity score can be computed using a set of tuned feature weights $w$ for a given type of tracker,
-%
-%\begin{equation}
-%	s_{k+1} = \argmax_{o_i \in O} w^T \textbf{F}(o_i).
-%\end{equation}
-%
-%Tracking the object using only the similarity score to estimate the current state is noisy and prone to outliers. Often the object will display erratic movement that is not consistent with motion of the physical system. Tracking is improved by using a Kalman Filter with a first-order model of the state $s$ of the object, with process noise $\nu \in N(0, \mu_1)$ and measurement noise $\omega \in N(0, \mu_2)$,
-%
-%\begin{eqnarray*}
-%s = \begin{bmatrix} P \\ \dot{P} \end{bmatrix} \\
-%s_{k+1} = \begin{bmatrix} I & dt * I \\ 0 & I \end{bmatrix} s_{k} + \nu \\
-%y_k = \begin{bmatrix} I & 0 \end{bmatrix} s_k + \omega.
-%\end{eqnarray*}
-%
-%
+
+\begin{equation} \label{eq:similarity_score}
+	s_{k} = \argmax_{o_i \in O} w^T \textbf{F}(o_i).
+\end{equation}
+
+Tracking the object using only the similarity score to estimate the state is noisy and prone to outliers. Often the estimated object will display erratic movement that is not consistent with motion of the physical system. Tracking is improved by using a Kalman Filter with a first-order model of the state $s$ of the object, with process noise $\nu \in N(0, \mu_1)$ and measurement noise $\omega \in N(0, \mu_2)$,
+
+\begin{eqnarray*}
+s = \begin{bmatrix} P \\ \dot{P} \end{bmatrix} \\
+s_{k+1} = \begin{bmatrix} I & dt * I \\ 0 & I \end{bmatrix} s_{k} + \nu \\
+y_k = \begin{bmatrix} I & 0 \end{bmatrix} s_k + \omega.
+\end{eqnarray*}
+
+A salient object is tracked until it moves out of the image frame and out of the field of view. The search for a new object is biased towards the last state of the previously tracked object. For example, circles are reinitialized with similar centers, since new objects are likely to be in the same location but closer or further away. Similarly, lines are reinitialized with similar orientations, since new objects are likely to be in a different location but have a similar orientation. New objects are initialized by finding a candidate object detection with a high Hough transform score that has parameters similar to the last state of the previously tracked object. We can again use the similarity score \eqref{eq:similarity_score} to choose between candidate object detections, and can threshold the score to filter bad initializations. 
+
 %A salient object is tracked until it moves out of the image frame and out of the field of view, at which point a new object is initialized. For the snake robot and pipe inspection videos, the search is biased towards small circles near the center of the previously tracked object. For the crawler robot, the search is biased towards lines with the same orientation as the previously tracked object.
-%
+
+The motion of the robot is inferred using the change in state of the salient object. Changes in the location of the object in the x-y plane of the image correspond to planar motions of the robot  ($\Delta x$, $\Delta y$, and $\Delta \theta$). For circular objects, orientation cannot be estimated due to symmetry. Motion of the robot into the image plane ($\Delta z$) corresponds to changes in the size of the object in the image. When tracking lines, motion into the image plane cannot be estimated because the length of the line is not a good estimate of size.
+
 %The motion of the robot can be inferred using the change in state of the salient object. Motions of the object in the x-y plane of the image correspond to planar motions of the robot  ($\Delta x$, $\Delta y$, and $\Delta \theta$). For circular objects, orientation cannot be estimated due to symmetry. Changes in the size of the object correspond to motions of the robot into the image plane ($\Delta z$). For linear objects, motion into this plane cannot be estimated because the length of the line is not a good estimate of size.
-%
+
 %\subsection{Combining Estimates}
 %
 %\subsection{Extracting Scale}
