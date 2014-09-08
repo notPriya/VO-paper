@@ -91,7 +91,7 @@ Pittsburgh, PA 15213, USA
 
 \begin{abstract}
 
-Inspection robots are valuable tools for surveillance and reconnaissance due to their ability to perform tasks in environments that humans and standard robotic platforms cannot access. In this work, we focus on inspection tasks that take place in confined spaces. In particular, we address current issues with robust localization for a variety of platforms in different confined environments. To accomplish this, we present a framework that enhances Lucas Kanade tracking by incorporating a salient object tracker. The standard Lucas Kanade algorithm is used to provide initial motion estimates of the robot's local frame, but has difficulty with large changes in illumination caused by the robot carrying its own light source. Salient environmental features are detected using a Hough Transform and subsequently tracked using a Kalman Filtering approach, but fails if salient features are unavailable or difficult to detect due to environmental conditions. We show that by combining these two approaches, we are able to leverage the individual benefits of each approach to compensate for the weaknesses of the other providing overall enhanced localization. We demonstrate the robustness of our framework by implementing it on and providing results for three separate platforms: a pipe inspection robot, a snake robot traversing the interior of a pipe, and a small treaded \emph{crawler} robot deployed in the interior of a wing box.
+Inspection robots are valuable tools for surveillance and reconnaissance due to their ability to perform tasks in environments that humans and standard robotic platforms cannot access. In this work, we focus on inspection tasks that take place in confined spaces. In particular, we address current issues with robust localization for a variety of platforms in different confined environments. To accomplish this, we present a framework that enhances Lucas-Kanade tracking by incorporating a salient object tracker. The standard Lucas-Kanade algorithm is used to provide initial motion estimates of the robot's local frame, but has difficulty with large changes in illumination caused by the robot carrying its own light source. Salient environmental features are detected using a Hough Transform and subsequently tracked using a Kalman Filtering approach, but fails if salient features are unavailable or difficult to detect due to environmental conditions. We show that by combining these two approaches, we are able to leverage the individual benefits of each approach to compensate for the weaknesses of the other providing overall enhanced localization. We demonstrate the robustness of our framework by implementing it on and providing results for three separate platforms: a pipe inspection robot, a snake robot traversing the interior of a pipe, and a small treaded \emph{crawler} robot deployed in the interior of a wing box.
 
 \end{abstract}
 
@@ -140,7 +140,7 @@ While inspection robots can be customized for the inspection task at hand, there
     \label{robots}
 \end{figure}
 
-Common approaches for localization in confined spaces include measuring robot's tether and dead reckoning. Measuring the tether estimates position given that the deployment environment is known to be linear a priori. For localization in more varied environments, dead reckoning can be used to process sensor information to estimate the robot's velocity and, via integration, the robot's position. In many circumstances, dead reckoning produces inaccurate localization results because slip due to the environmental conditions or complexity of the task is not accounted for in primarily first-order dead reckoning approaches. 
+Common approaches for localization in confined spaces include measuring the robot's tether and dead reckoning. Measuring the tether estimates position given that the deployment environment is known to be linear a priori. For localization in more varied environments, dead reckoning can be used to process sensor information to estimate the robot's velocity and, via integration, the robot's position. In many circumstances, dead reckoning produces inaccurate localization results because slip due to the environmental conditions or complexity of the task is not accounted for in primarily first-order dead reckoning approaches. 
 
 %Might want to motivate what feature based and direct approaches are. Cite people? Also you probably want to be citing someone for saying that feature association fails. Talk to Dey about whom to cit otherwise include a figure.
 
@@ -154,17 +154,17 @@ Visual odometry is challenging in inspection environments that are slightly text
 
 In order to address the challenges of visual odometry in inspection environments, we combine a direct approach to leverage motion information across the entire image with a feature based approach to maintain illumination and drift invariance. Thus, we present a framework for enhancing Lucas-Kanade by incorporating a salient object tracker. We demonstrate the generality and robustness of the approach for robots with different methods of locomotion operating in different environments.
 
-%We present a framework for enhancing Lucas Kanade tracking by incorporating a salient object tracker, and show improvement over Lucas Kanade for multiple experimental platforms. We combine a direct approach to leverage motion information across the entire image with a feature based approach to maintain illumination and drift invariance. We demonstrate the generality and robustness of the approach for multiple robots with different methods of locomotion operating in different environments.
+%We present a framework for enhancing Lucas-Kanade tracking by incorporating a salient object tracker, and show improvement over Lucas-Kanade for multiple experimental platforms. We combine a direct approach to leverage motion information across the entire image with a feature based approach to maintain illumination and drift invariance. We demonstrate the generality and robustness of the approach for multiple robots with different methods of locomotion operating in different environments.
 
 We test our approach on a dataset of videos from pipe inspection robots published by sewer inspection companies on YouTube. We also perform experiments using a snake robot (Fig. \ref{robots:snake}) crawling through a pipe, and a crawler robot (Fig. \ref{robots:crawler}) driving in a mock airplane wing. The test platforms are described further in Section \ref{section:Experimental Platforms}.
 
 
 \section{Approach}
 
-%Figure \ref{approach} shows an overview of the integration of a salient object tracker with the Lucas Kanade pipeline. Lucas Kanade produces an estimate of motion by comparing a new image frame with a previously localized frame. The salient object tracker uses a Hough Transform to detect an object in the new image frame that is tracked via a Kalman Filter, producing another estimate of motion. The robot's motion is estimated as the weighted average of the estimations produced independently by Lucas Kanade and the object tracker. The final motion estimate is integrated to determine the state of the robot relative to its initial position.
+%Figure \ref{approach} shows an overview of the integration of a salient object tracker with the Lucas-Kanade pipeline. Lucas-Kanade produces an estimate of motion by comparing a new image frame with a previously localized frame. The salient object tracker uses a Hough Transform to detect an object in the new image frame that is tracked via a Kalman Filter, producing another estimate of motion. The robot's motion is estimated as the weighted average of the estimations produced independently by Lucas-Kanade and the object tracker. The final motion estimate is integrated to determine the state of the robot relative to its initial position.
 
 
-Since inspection environments are textured with few features, direct approaches are more appropriate. Specifically, Lucas-Kanade \cite{Lucas81, lucaskanade} is used the primary motion estimate. Direct approaches can be combined with a feature-based approach to gain illumination invariance. Structural features of the environment are detected using a Hough transform \cite{Hough, GeneralizeHough} and tracked using a Kalman filter \cite{Kalman}. Estimates of pose from the direct approach and the feature-based approach are combined using a high-level Kalman filter observing the robot's motion. The Kalman filter helps smooth noise and detect measurement outliers and provides a framework for combining multiple pose estimates. Since the motion measurements are in the image frame, the scale between the image and the environment must be extracted. The size of the tracked objects in the image is compared to the known size of the object in the environment. These comparisons give the scale between the robot's motion estimated by the visual odometry algorithm and the robot's motion in the environment. Figure \ref{approach} provides an overview of the integration of a salient object tracker with Lucas-Kanade.
+\comment{Fix this introductory sentence.} Since the inspection environments considered are textured with few features, direct approaches are more appropriate. Lucas-Kanade \cite{Lucas81, lucaskanade} is used to find the relative motion between image frames in the footage taken by the robot. The direct approach can be combined with a feature-based approach to gain illumination invariance. Structural features of the environment are detected using a Hough transform \cite{Hough59, Ballard81} and tracked using a Kalman filter \cite{Kalman82}. Estimates of pose from the direct approach and the feature-based approach are combined using a high-level Kalman filter observing the robot's motion. The Kalman filter helps smooth noise and detect measurement outliers and provides a framework for combining multiple pose estimates. Since the motion measurements are in the image frame, the scale between the image and the environment must be extracted. The size of the tracked objects in the image is compared to the known size of the object in the environment. These comparisons give the scale between the robot's pose estimated by the visual odometry algorithms and the robot's pose in the environment. Figure \ref{approach} provides an overview of the integration of a salient object tracker with Lucas-Kanade.
 
 
 %\begin{itemize}
@@ -189,53 +189,63 @@ Since inspection environments are textured with few features, direct approaches 
     \label{approach}
 \end{figure}
 
-%\subsection{Lucas Kanade Tracking}
-%
-%The Lucas Kanade algorithm transforms the current frame $I$ to match a template frame $T$, which is a previously localized image frame that is temporally near the current frame. The transform $W$ between the current frame and the template frame is computed by optimizing the parameters $p$ of the transform to minimize the error in pixel intensities over all pixels $\psi$,
-%
-%\begin{equation} \label{eq:lkt_min}
-%    \argmin_p \sum_{\psi} [I(W(\psi, p)) - T(\psi)]^2.
-%\end{equation}
-%
-%Since both the snake robot and the crawler robot have limited motions in the inspection environments, the image transform is constrained to rotations, translations, and scale. Planar motions of the robot ($\Delta x$, $\Delta y$, and $\Delta \theta$) correspond directly to planar motions of the image, while motion into the image plane ($\Delta z$) manifests as a change in image scale, proportional to the focal length $f$ of the camera. To simplify further equations, the robot's motion into the image plane can be written using the change in image scale $\alpha$,
-%
-%\begin{equation} \label{eq:z_motion_conversion}
-%	\alpha = 1 - \frac{\Delta z}{f}.
-%\end{equation}
-%
-%In general, the transform between the current frame and the template frame described in terms of the robot's motion will have the form,
-%
-%%\comment{Is this correct? Should the $\alpha$ be inside the sinusoids?}
-%
-%\begin{equation*}
-%W(\Delta x, \Delta y, \Delta \theta, \alpha) = \begin{bmatrix} \frac{\cos(\Delta \theta)}{\alpha} & -\frac{\sin(\Delta \theta)}{\alpha} & \frac{\Delta x}{\alpha} \\ \frac{\sin(\Delta \theta)}{\alpha} & \frac{\cos(\Delta \theta)}{\alpha} & \frac{\Delta y}{\alpha} \\ 0 & 0 & 1 \end{bmatrix}.
-%\end{equation*}
-%
+\subsection{Lucas-Kanade}
+
+Direct approaches compare the pixel intensities of two images to determine the correspondence between them. One image is transformed to match the other image, which serves as a template. Lucas-Kanade finds the transform that minimizes the total error in pixel intensities between the transformed image and the template image. The transform is described using a set of parameters that are optimized by Lucas-Kanade. The parameters are refined using the gradient of the template image to minimize the error in pixel intensities. 
+
+For all pixels $\psi$, the error between the transformed image $I$ and the template image $T$ is computed. Lucas-Kanade finds the parameters $p$ of the transform $W$ that minimizes the sum of squared error in intensity, 
+
+\begin{equation} \label{eq:lkt_min}
+    \argmin_p \sum_{\psi} [I(W(\psi, p)) - T(\psi)]^2.
+\end{equation}
+
+Lucas-Kanade is used to find the relative motion between image frames in the inspection footage taken by the robot. Every image in the video is localized with respect to an earlier frame that has already been localized. Since the robot has smooth movement, image frames are compared to nearby frames in the video to ensure sufficient visual similarity between the images to accurately relate them.
+
+For our applications, since the robot has limited motion in the inspection environments, the image transform is constrained to rotations, translations, and scale. Motions of the robot in the image plane ($\Delta x$, $\Delta y$, and $\Delta \theta$) correspond directly to motions of the image. Motion of the robot into the image plane ($\Delta z$) manifests as a change in image scale, proportional to the focal length $f$ of the camera. To simplify further equations, the robot's motion into the image plane can be written using the change in image scale $\alpha$,
+
+\begin{equation} \label{eq:z_motion_conversion}
+	\alpha = 1 - \frac{\Delta z}{f}.
+\end{equation}
+
+When the robot takes a new image, the transform between the new image and the template image described in terms of the robot's motion will have the form,
+
+\begin{equation*}
+W(\Delta x, \Delta y, \Delta \theta, \alpha) = \begin{bmatrix} \frac{\cos(\Delta \theta)}{\alpha} & -\frac{\sin(\Delta \theta)}{\alpha} & \frac{\Delta x}{\alpha} \\ \frac{\sin(\Delta \theta)}{\alpha} & \frac{\cos(\Delta \theta)}{\alpha} & \frac{\Delta y}{\alpha} \\ 0 & 0 & 1 \end{bmatrix}.
+\end{equation*}
+
+\comment{Integrate paragraphs better.} Since we are looking at video from a robot which has smooth movements, image frames that are temporally close in the video must also be \comment{spatially close in the environment isnt quite right.} spatially close in the environment. 
+\comment{Casual.} Since image frames must have enough visual similarity to be accurately correlated, there must be small spatial motion between the images. Since there is small spatial motion, there is small rotation. We can linearize around a small rotation to give an approximation of the transform with a simpler representation.
+
+
 %Since the image frames being compared are temporally close, they must also be spatially close. Linearizing around small rotations gives an approximation to the transform,
-%
-%\begin{equation*}
-%W(\Delta x, \Delta y, \Delta \theta, \alpha) = \begin{bmatrix} \frac{1}{\alpha} & -\frac{\Delta \theta}{\alpha} & \frac{\Delta x}{\alpha} \\ \frac{\Delta \theta}{\alpha} & \frac{1}{\alpha} & \frac{\Delta y}{\alpha} \\ 0 & 0 & 1 \end{bmatrix}.
-%\end{equation*}
-%
-%For convenience, during the Lucas Kanade minimization, the transform can be rewritten in terms of a set of independent parameters,
-%
-%\begin{eqnarray}
-%\begin{split} \label{eq:warp_param_conversion}
-%p_1 &=& \frac{\Delta x}{\alpha}\\
-%p_2 &=& \frac{\Delta y}{\alpha}\\
-%p_3 &=& \frac{\Delta \theta}{\alpha}\\
-%p_4 &=& \frac{1}{\alpha} - 1\\
-%\end{split}
-%\\ \label{eq:param_warp}
-%W(p) = \begin{bmatrix} 1+p_4 & -p_3 & p_1 \\ p_3 & 1+p_4 & p_2 \\ 0 & 0 & 1 \end{bmatrix}.
-%\end{eqnarray}
-%
-%We solve the resulting minimization problem \eqref{eq:lkt_min} with the parameterized transform \eqref{eq:param_warp} using the method of Lucas and Kanade \cite{Lucas81, lucaskanade}, which provides an estimate of the relative motion between the template and the current image frame. The robot's motion can be recovered from the transform parameters using Equation \eqref{eq:z_motion_conversion} and Equation \eqref{eq:warp_param_conversion}.
-%
-%Since motion is determined relative to the template frame, errors in the localization of the template compound when it is updated. Therefore, instead of updating the template every frame, the same template is used to localize several consecutive images, reducing drift.
-%
-%In order to ensure that image comparisons are temporally and spatially close, the template is updated to the last localized image frame when the robot has traveled beyond some threshold distance and the field of view has changed.
-%
+
+\begin{equation*}
+W(\Delta x, \Delta y, \Delta \theta, \alpha) = \begin{bmatrix} \frac{1}{\alpha} & -\frac{\Delta \theta}{\alpha} & \frac{\Delta x}{\alpha} \\ \frac{\Delta \theta}{\alpha} & \frac{1}{\alpha} & \frac{\Delta y}{\alpha} \\ 0 & 0 & 1 \end{bmatrix}.
+\end{equation*}
+
+The set of parameters optimized during the Lucas-Kanade minimization can be \comment{extracted is not the right word.} extracted from the robot's motion. 
+\comment{Casual. Fix.} We can then write the transform in terms of these parameters,
+
+%For convenience, during the Lucas-Kanade minimization, the transform can be rewritten in terms of a set of independent parameters,
+
+\begin{eqnarray}
+\begin{split} \label{eq:warp_param_conversion}
+p_1 &=& \frac{\Delta x}{\alpha}\\
+p_2 &=& \frac{\Delta y}{\alpha}\\
+p_3 &=& \frac{\Delta \theta}{\alpha}\\
+p_4 &=& \frac{1}{\alpha} - 1\\
+\end{split}
+\\ \label{eq:param_warp}
+W(p) = \begin{bmatrix} 1+p_4 & -p_3 & p_1 \\ p_3 & 1+p_4 & p_2 \\ 0 & 0 & 1 \end{bmatrix}.
+\end{eqnarray}
+
+We solve the resulting minimization problem \eqref{eq:lkt_min} with the parameterized transform \eqref{eq:param_warp} using the method of Lucas and Kanade \cite{Lucas81, lucaskanade}, which provides an estimate of the relative motion between the template and the current image frame. The robot's motion can be recovered from the transform parameters using Equation \eqref{eq:z_motion_conversion} and Equation \eqref{eq:warp_param_conversion}.
+
+Since motion is determined relative to the template image, errors in the localization compound when the template is updated. Therefore, instead of updating the template every frame, the same template is used to localize several consecutive images, reducing drift.
+\comment{integrate this better with the paragraph.} However, as the robot moves the new images move further from the template image, breaking the assumption of spatially closeness to the template, making the linearization worse. 
+\comment{Integrate this better with the paragraph.} In order to ensure that image comparisons are temporally and spatially close, the template is updated to the last localized image frame when the robot has traveled beyond some threshold distance and the field of view has changed.
+\comment{How do you choose this threshold?  What happens if the field of view hasn’t really changed.  Exactly when do you decide the linearization fails…justify your decisions.} This threshold is set by the user based on the environment, so that images have little motion up to the point of the thresholded distance. If objects are close to the camera, this number must be smaller than if the objects were further away. If the field of view hasn't changed then we update more than necessary. If the field of view has changed, the linearization will be poor and Lucas-Kanade will have worse performance.
+
 %\subsection{Salient Object Tracking}
 %
 %In an inspection environment, large features, such as pipe joints or airplane ribs, can be tracked to improve motion estimates. These salient objects can be detected in an image using a Hough Transform.
@@ -265,9 +275,11 @@ Since inspection environments are textured with few features, direct approaches 
 %
 %The motion of the robot can be inferred using the change in state of the salient object. Motions of the object in the x-y plane of the image correspond to planar motions of the robot  ($\Delta x$, $\Delta y$, and $\Delta \theta$). For circular objects, orientation cannot be estimated due to symmetry. Changes in the size of the object correspond to motions of the robot into the image plane ($\Delta z$). For linear objects, motion into this plane cannot be estimated because the length of the line is not a good estimate of size.
 %
+%\subsection{Combining Estimates}
+%
 %\subsection{Extracting Scale}
 %
-%Both Lucas Kanade and the salient object tracker measure the robot's motion using image pixels. In order extract physical distances, scale between image pixels and physical objects must be determined.
+%Both Lucas-Kanade and the salient object tracker measure the robot's motion using image pixels. In order extract physical distances, scale between image pixels and physical objects must be determined.
 %
 %For the pipe inspection videos and the snake robot, the scale is computed through the known radius of the pipe. The Youtube videos are annotated with the radius found by physically measuring the pipe. For the snake robot, the pipe radius was physically measured, but could also be estimated using the robot's joint angles \cite{Enner2013}.
 %
@@ -286,7 +298,7 @@ Since inspection environments are textured with few features, direct approaches 
 
 \section{Experimental Platforms} \label{section:Experimental Platforms}
 
-%We performed experiments on a datset of pipe inspection videos from Youtube as well as on the snake robot and the crawler robot.
+%We performed experiments on a dataset of pipe inspection videos from Youtube as well as on the snake robot and the crawler robot.
 %
 %The Youtube dataset consists of four videos \cite{pipevideo2, pipevideo4, pipevideo5, pipevideo6} posted by pipe inspection companies of first-person footage from inspection robots equipped with lighting and a camera as they navigate through a pipe. These videos are annotated with ground truth distance that the robot has traveled as measured via the robot's tether. This data contains videos taken in pipes of varying size, material, and conditions.
 %
@@ -333,10 +345,10 @@ Since inspection environments are textured with few features, direct approaches 
 %\end{table*}
 %
 %
-%Overall, the salient object tracker improves the Lucas Kanade position estimates by reducing the average error as shown in Table \ref{table:youtube_results}. On average, incorporating the salient object tracker reduces the maximum error of Lucas Kanade by $36 \%$ and the mean error by $31 \%$. For videos 3 and 4, the salient object tracker fails when there is not enough light to enhance textures along the pipe wall, making it difficult to detect joints. Repeated failures of the object tracker results in a higher maximum error and higher mean error on these videos.
+%Overall, the salient object tracker improves the Lucas-Kanade position estimates by reducing the average error as shown in Table \ref{table:youtube_results}. On average, incorporating the salient object tracker reduces the maximum error of Lucas-Kanade by $36 \%$ and the mean error by $31 \%$. For videos 3 and 4, the salient object tracker fails when there is not enough light to enhance textures along the pipe wall, making it difficult to detect joints. Repeated failures of the object tracker results in a higher maximum error and higher mean error on these videos.
 %
 %
-%We threshold the average pixel intensity value over the entire video to determine apriori whether a particular pipe video has enough lighting for the salient object tracker to perform well. Videos 1 and 2 had the highest average pixel intensity values and also corresponded to videos where the salient object tracker improves upon the Lucas Kanade algorithm the most (see Figure \ref{youtube:error_over_time}). These two videos improved the mean error by $76 \%$ on average.
+%We threshold the average pixel intensity value over the entire video to determine apriori whether a particular pipe video has enough lighting for the salient object tracker to perform well. Videos 1 and 2 had the highest average pixel intensity values and also corresponded to videos where the salient object tracker improves upon the Lucas-Kanade algorithm the most (see Figure \ref{youtube:error_over_time}). These two videos improved the mean error by $76 \%$ on average.
 %
 %
 %\begin{figure}[tb]
@@ -347,15 +359,15 @@ Since inspection environments are textured with few features, direct approaches 
 %\end{figure}
 %
 %
-%We carried out experiments with the snake robot and the crawler robot to compare the performance of Lucas Kanade with and without salient object tracking. We collected data for two sets of motions with each of these robots.
+%We carried out experiments with the snake robot and the crawler robot to compare the performance of Lucas-Kanade with and without salient object tracking. We collected data for two sets of motions with each of these robots.
 %
 %For the snake robot, the first motion (dashed line in Fig. \ref{snakes:trial8_path}) consisted of unimpeded motion within the pipe, while the second motion (dashed line in Fig. \ref{snakes:trial9_path}) simulated infinite slip when the robot was held in place. The groundtruth was estimated by measuring the amount of tether released at the end of each motion and when the robot was held in place.
 %
-%The motion model for the snake robot slightly underestimates the actual robot motion when unimpeded (Fig. \ref{snakes:trial8_path}) and fails to adjust for holding the robot in place (Fig. \ref{snakes:trial9_path}), since it has no notion of friction or slip. In contrast, Lucas Kanade and the salient object tracker are maintian a consistent position estimate when the robot is held in place. Compared to the actual measurement of $0.1714$m for the point when the robot was held in place, the Lucas Kanade estimate is $0.1831$m, while incorporating the salient object tracker slightly improves the estimate to $0.1823$m. 
+%The motion model for the snake robot slightly underestimates the actual robot motion when unimpeded (Fig. \ref{snakes:trial8_path}) and fails to adjust for holding the robot in place (Fig. \ref{snakes:trial9_path}), since it has no notion of friction or slip. In contrast, Lucas-Kanade and the salient object tracker are maintian a consistent position estimate when the robot is held in place. Compared to the actual measurement of $0.1714$m for the point when the robot was held in place, the Lucas-Kanade estimate is $0.1831$m, while incorporating the salient object tracker slightly improves the estimate to $0.1823$m. 
 %
-%Figure \ref{snakes:trial8_error} shows that even though all three estimates drift from the true position of the robot, incorporating the salient object tracker helps improve motion estimates from Lucas Kanade. In Figure \ref{snakes:trial9_error}, Lucas Kanade with and without the object tracker both accumulate a large amount of error after frame 600, when the robot's field of view faces the side of the pipe and when joint moves behind the camera. Since the pipe is made of PVC and has little texture and the joint is out of the field of view, both vision based methods have poor estimates of relative motion.
+%Figure \ref{snakes:trial8_error} shows that even though all three estimates drift from the true position of the robot, incorporating the salient object tracker helps improve motion estimates from Lucas-Kanade. In Figure \ref{snakes:trial9_error}, Lucas-Kanade with and without the object tracker both accumulate a large amount of error after frame 600, when the robot's field of view faces the side of the pipe and when joint moves behind the camera. Since the pipe is made of PVC and has little texture and the joint is out of the field of view, both vision based methods have poor estimates of relative motion.
 %
-%Overall, Lucas Kanade has a final error estimate of $18.6 \%$ of the distance traveled for the first motion and $45.7 \%$ for the second motion, while Lucas Kanade with the object tracking has a final error estimate of $2 \%$ of total distance traveled for the first motion and $61.6 \%$ for the second motion. Incorporating the salient object tracker improves estimation for the first motion, but causes more drift for the second motion.
+%Overall, Lucas-Kanade has a final error estimate of $18.6 \%$ of the distance traveled for the first motion and $45.7 \%$ for the second motion, while Lucas-Kanade with the object tracking has a final error estimate of $2 \%$ of total distance traveled for the first motion and $61.6 \%$ for the second motion. Incorporating the salient object tracker improves estimation for the first motion, but causes more drift for the second motion.
 %
 %\begin{figure*}[tb]
 %	\centering
@@ -397,11 +409,11 @@ Since inspection environments are textured with few features, direct approaches 
 %
 %Estimates of motion from tracking the April Tag (red line in Fig. \ref{crawler:pattern1_path}) are good when the robot is close to the tag, but get progressively worse further from the tag, especially when the robot rotates, because the tag cannot be localized well. Degrading position estimates further from the April Tag are even more apparent in Fig. \ref{crawler:pattern2_path}. In contrast, the vision algorithms have a consistent estimate of the robot's motion even when the tag cannot be seen, and have better estimates than the April Tag tracker when further from the April Tag. 
 %
-%With the crawler robot, Fig. \ref{crawler:pattern1_error} shows that both Lucas Kanade and Lucas Kanade with object tracking have a good estimate of the robot's orientation and forward distance traveled. The average position error was $0.0042$m for Lucas Kanade and $0.0019$m for Lucas Kanade with object tracking. The average orientation error was $4.2^{\circ}$ and $3.7^{\circ}$ respectively. 
+%With the crawler robot, Fig. \ref{crawler:pattern1_error} shows that both Lucas-Kanade and Lucas-Kanade with object tracking have a good estimate of the robot's orientation and forward distance traveled. The average position error was $0.0042$m for Lucas-Kanade and $0.0019$m for Lucas-Kanade with object tracking. The average orientation error was $4.2^{\circ}$ and $3.7^{\circ}$ respectively. 
 %
-%Since motion parallel to the beam produces little visual variation and is difficult to detect, we observed degraded odometry estimates, Fig. \ref{crawler:pattern2_error}, for the second pattern containing lateral motion. The average position error increased to $0.0310$m for Lucas Kanade and to $0.0189$m for Lucas Kanade with object tracking. The average orientation error increased to $5.4^{\circ}$ for Lucas Kanade and to $4.6^{\circ}$ for Lucas Kanade with object tracking.
+%Since motion parallel to the beam produces little visual variation and is difficult to detect, we observed degraded odometry estimates, Fig. \ref{crawler:pattern2_error}, for the second pattern containing lateral motion. The average position error increased to $0.0310$m for Lucas-Kanade and to $0.0189$m for Lucas-Kanade with object tracking. The average orientation error increased to $5.4^{\circ}$ for Lucas-Kanade and to $4.6^{\circ}$ for Lucas-Kanade with object tracking.
 %
-%Table \ref{table:crawler_results} shows that though the pose estimate is poor, adding the salient object tracker to Lucas Kanade improves motion estimates by reducing overall position and orientation error.
+%Table \ref{table:crawler_results} shows that though the pose estimate is poor, adding the salient object tracker to Lucas-Kanade improves motion estimates by reducing overall position and orientation error.
 %
 %\begin{figure*}[tb]
 %	\centering
@@ -464,7 +476,7 @@ Since inspection environments are textured with few features, direct approaches 
 %
 %\section{Conclusion}
 %
-%We have proposed a vision system for robots in inspection environments that improves the Lucas Kanade algorithm by adding a Hough Transform based salient object tracker. In general, Lucas Kanade provides a starting estimate of the robot's motion by matching the textural components of the image. However, errors in motion estimation accumulate and cause drift. The salient object tracker is more precise for certain components of the robot's motion and is more insensitive to drift, since the tracker senses the same object repeatedly. We have demonstrated incorporating the salient object tracker on multiple inspection robots and shown that it improves Lucas Kanade for all platforms.
+%We have proposed a vision system for robots in inspection environments that improves the Lucas-Kanade algorithm by adding a Hough Transform based salient object tracker. In general, Lucas-Kanade provides a starting estimate of the robot's motion by matching the textural components of the image. However, errors in motion estimation accumulate and cause drift. The salient object tracker is more precise for certain components of the robot's motion and is more insensitive to drift, since the tracker senses the same object repeatedly. We have demonstrated incorporating the salient object tracker on multiple inspection robots and shown that it improves Lucas-Kanade for all platforms.
 
 
 
